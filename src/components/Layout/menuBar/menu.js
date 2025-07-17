@@ -8,42 +8,16 @@ import workqueue from "../../../../assets/navbar/workqueue.webp";
 
 export const AdminMenuList = [
   {
-    title: "Home",
-    iconStyle: homeIcon,
-    activeIcon: homeIcon,
-    to: "/admin/dashboard",
-  },
-  {
-    title: "Users",
-    iconStyle: userIcon,
-    activeIcon: userIcon,
-    to: "/admin/users",
-  },
-  {
-    title: "Productivity",
-    iconStyle: customerIcon,
-    activeIcon: customerIcon,
-    to: "/admin/productivity",
-  },
-  {
-    title: "Tin",
-    iconStyle: resourceIcon,
-    activeIcon: resourceIcon,
-    to: "/admin/tin",
-    childRoute: "/admin/tin/details",
-  },
-  {
     title: "Patients",
     iconStyle: patientIcon,
     activeIcon: patientIcon,
-    to: "/admin/patients",
-    childRoute: "/admin/patients/details",
+    to: "/home",
   },
   {
     title: "Report",
     iconStyle: reportIcon,
     activeIcon: reportIcon,
-    to: "/admin/report",
+    to: "/report",
   },
 ];
 export const OwnerMenuList = [

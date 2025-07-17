@@ -56,7 +56,7 @@ const NavBar = ({
       case "project_lead":
         return ProjectLeadMenuList;
       default:
-        return [];
+        return AdminMenuList;
     }
   };
   const renderMenuItems = () => {
@@ -77,7 +77,11 @@ const NavBar = ({
         stateActive === data?.childRoute4;
       return (
         <li
-          className={` ${activeState ? headerStyles.header_active : ""}`}
+          className={` ${activeState ? headerStyles.header_active : ""} ${
+            data?.title === "Patients" || data?.title === "Report" 
+              ? headerStyles.primaryMenuItem 
+              : ""
+          }`}
           key={index}
           onClick={() => {
             router.push(data?.to);

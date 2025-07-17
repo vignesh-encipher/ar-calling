@@ -1,0 +1,199 @@
+/* Patient List Container */
+.patientListContainer {
+  padding: 24px;
+  background-color: #f8fafc;
+  min-height: 100vh;
+}
+
+/* Patient List Card */
+.patientListCard {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  height: 100%;
+}
+
+/* Patient List Header */
+.patientListHeader {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  margin: -16px -24px 16px -24px;
+  padding: 16px 24px;
+  border-radius: 8px 8px 0 0;
+}
+
+.patientListTitle {
+  margin: 0;
+  color: white;
+  font-weight: 600;
+}
+
+/* Patient Cards Container */
+.patientCardsContainer {
+  max-height: 600px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+/* Individual Patient Card */
+.patientCard {
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid #e8e8e8;
+  background-color: #ffffff;
+}
+
+.patientCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.patientCardSelected {
+  border: 2px solid #1890ff;
+  background-color: #f0f8ff;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Patient Card Body */
+.patientCardBody {
+  padding: 16px;
+}
+
+/* Patient Info Layout */
+.patientInfoLayout {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.patientInfoContent {
+  flex: 1;
+}
+
+/* Patient Name Section */
+.patientNameSection {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.patientIcon {
+  margin-right: 8px;
+  color: #8c8c8c;
+  font-size: 16px;
+}
+
+.patientIconSelected {
+  color: #1890ff;
+}
+
+.patientName {
+  font-size: 16px;
+  color: #262626;
+  font-weight: 600;
+}
+
+.patientNameSelected {
+  color: #1890ff;
+}
+
+/* Status Tags */
+.statusTag {
+  margin-left: 8px;
+  font-weight: 500;
+  border: none;
+}
+
+/* Patient Details Grid */
+.patientDetailsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.patientDetailsGridSelected {
+  color: #595959;
+}
+
+/* Detail Labels */
+.detailLabel {
+  color: #8c8c8c;
+}
+
+.detailLabelSelected {
+  color: #595959;
+}
+
+/* Detail Values */
+.detailValue {
+  color: #262626;
+}
+
+.detailValueSelected {
+  color: #1890ff;
+}
+
+/* Code Elements */
+.codeElement {
+  background-color: #f5f5f5;
+  color: #595959;
+}
+
+.codeElementSelected {
+  background-color: #e6f7ff;
+  color: #1890ff;
+}
+
+/* Action Buttons */
+.actionButtons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Chat Button */
+.chatButton {
+  margin-left: 8px;
+  opacity: 1;
+}
+
+.chatButtonCompleted {
+  opacity: 0.6;
+  background-color: #f5f5f5;
+  border-color: #d9d9d9;
+  color: #8c8c8c;
+}
+
+.chatButtonSelected {
+  background-color: #40a9ff;
+  border-color: #40a9ff;
+  color: #ffffff;
+}
+
+/* Completion Icon */
+.completionIcon {
+  color: #52c41a;
+  font-size: 18px;
+}
+
+.completionIconSelected {
+  filter: drop-shadow(0 0 4px rgba(82, 196, 26, 0.3));
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .patientListContainer {
+    padding: 16px;
+  }
+  
+  .patientCardsContainer {
+    max-height: 400px;
+  }
+  
+  .patientDetailsGrid {
+    grid-template-columns: 1fr;
+  }
+} 

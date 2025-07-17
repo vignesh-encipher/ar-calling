@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react'
 import { actions as dashbaordActions } from "../../store/dashboard";
 import {connect} from "react-redux";
+import PatientList from './patientList';
 
 const Home = ({workFlowData, WorlFlow}) => {
     console.log(WorlFlow);
@@ -9,7 +10,9 @@ const Home = ({workFlowData, WorlFlow}) => {
         workFlowData()
     }, [])
   return (
-    <div>Home</div>
+    <div>
+      <PatientList />
+    </div>
   )
 }
 const enhancer = connect(
