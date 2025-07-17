@@ -1,0 +1,7 @@
+.profileImgStyle {
+    border-radius: 50%;
+    padding: 5px;
+  }
+  .profileImgBoxShadow {
+    box-shadow: 0 1px 3px var(--default-Text-color);
+  }

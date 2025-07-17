@@ -1,0 +1,192 @@
+.customHeader {
+  background: var(--navBarBG) !important;
+  height: 60px;
+  padding: 0 20px;
+}
+
+.customMenu {
+  background-color: transparent !important;
+  height: 100%;
+  border-right: 0;
+}
+
+.customMenu {
+  height: 100%;
+  border-right: 0;
+  background-color: none !important;
+  border-inline-end: none !important;
+}
+
+.side {
+  height: calc(100vh - 60px);
+  height: 100%;
+  background-color: var(--sideBarColor) !important;
+}
+
+.layoutContainer {
+  min-height: 93vh;
+}
+
+.sticky {
+  position: relative;
+  top: 400px;
+  left: 0px;
+  z-index: 1000;
+}
+
+.collapseButtonCollapsed,
+.collapseButtonExpanded {
+  background-color: var(--bluish-gray);
+  width: 18px;
+  height:18px;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 1px 3px var(--default-Text-color);
+}
+
+.collapseButtonCollapsed {
+  position: absolute;
+  top: 3px;
+  left: 90%;
+  transform: translateY(70%);
+  transition: width 0.3s ease;
+}
+
+.collapseButtonExpanded {
+  position: absolute;
+  top: 3px;
+  left: 75%;
+  transform: translateY(60%);
+  transition: width 0.3s ease;
+}
+.dropdownContent {
+  width: 350px;
+}
+
+.footer{
+  font-size: 14px;
+  left: -29px;
+}
+
+.footerImg{
+  height: 58px;
+  width: 80px
+}
+
+/* 110% layout */
+@media screen and (max-width: 1228.80px) {
+  .dropdownContent {
+    width: 320px !important;
+    height: 100px !important;
+    font-size: 12px;
+  }
+  .customHeader{
+    height: 55px !important;
+  }
+  .footer{
+    font-size: 11px;
+    left: -23px;
+  }
+  .footerImg{
+    height: 45px;
+    width: 63px
+  }
+}
+/* 125% layout */
+@media screen and (min-width: 1396.36px) and (max-width: 1433.60px) {
+  .collapseButtonExpanded {
+    position: absolute;
+    top: 1%;
+    left: 75%;
+    transform: translateY(60%);
+    transition: width 0.3s ease;
+    background-color: var(--bluish-gray);
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    z-index: 1100;
+    cursor: pointer;
+    box-shadow: 0 1px 3px var(--default-Text-color);
+  }
+  .dropdownContent {
+    width: 280px !important;
+    height: 100px !important;
+    font-size: 10px;
+  }
+  .customHeader{
+    height: 50px;
+  }
+  .footer{
+    font-size: 12px;
+    left: -24px;
+  }
+  .footerImg{
+    height: 50px;
+    width: 70px
+  }
+}
+  /* 150% layout */
+@media screen and (max-width: 1024px) {
+  .dropdownContent {
+    width: 230px !important;
+    height: 85px !important;
+    font-size: 8px;
+  }
+  .customHeader{
+    height: 50px !important;
+  }
+  .footer{
+    font-size: 9px !important;
+    left: -22px !important
+  }
+  .footerImg{
+    height: 36px;
+    width: 58px
+  }
+}
+.activeMenuStyle,
+.activeMenuStyle:hover {
+  background-color: var(--activeMenuBg) !important;
+  color: var(--default-Text-color) !important;
+}
+
+.userProfileInfo {
+  background-color: var(--sideBarUserProfile);
+  color: var(--patientsActiveLegendsColor);
+  text-align: center;
+}
+.userProfileDiv {
+  height: 43px;
+  border: 1px solid var(--userProfileBorder);
+  background-color: var(--userProfileBG);
+  border-radius: 19px;
+}
+.editProfile {
+  position: relative;
+  top: -75px;
+  left: 65px;
+  cursor: pointer;
+}
+.footerCont {
+  background-color: var(--logoutBtn);
+  color: var(--defaultColor);
+}
+.footerDiv:hover > .footerCont {
+  color: var(--defaultColor);
+}
+.usersLoaderDiv{
+  width:40px;
+  height:40px;
+}
+
+.iconImage{
+  height: 20px;
+  width: 20px;
+}
+.navHeader{
+  border-bottom: 0.5px solid #A8B3BD;
+   height: 44px;
+}
+.nameHeader{
+  margin-top: 5px;
+}

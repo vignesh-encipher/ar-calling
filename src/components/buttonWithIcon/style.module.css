@@ -1,0 +1,28 @@
+.btnColor {
+  background-color: #043069;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  text-align: left;
+}
+
+.btnColor:hover {
+  background-color: #6c9ddd;
+  color: #fff;
+}
+
+.outer {
+  border: 1px solid #043069;
+  color: #043069;
+  display: flex;
+  align-items: center;
+  text-align: left;
+}
+
+.outer:hover {
+  background-color: #6c9ddd;
+  color: #fff;
+}
+.btnText {
+  margin-top: 4px;
+}

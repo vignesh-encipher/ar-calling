@@ -1,0 +1,305 @@
+.header_active {
+  position: relative;
+}
+
+.header_menu .header_active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 5px;
+  top: 59px;
+  width: 100%;
+  height: 5px;
+  border-radius: 2px;
+  background: #108ce8;
+  padding-bottom: "50px";
+}
+
+.header_menu {
+  gap: 29px;
+  padding: 15px 10px 0px 10px;
+}
+
+.header_menu li {
+  cursor: pointer;
+  list-style: none;
+}
+
+.header_menu li span {
+  color: #e2e2e2 !important;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  padding-top: 2px;
+  letter-spacing: 0.36px;
+}
+.settingsIcon {
+  background: #108ce8;
+  padding: 6px 6px;
+  margin-right: 5px;
+}
+.profile-detail {
+  width: 10vw;
+}
+.mainselectbox {
+  padding: 12px 24px;
+  font-size: 4px;
+}
+
+.selectorboxline {
+  display: block;
+  width: 2px;
+  height: 36px;
+  background-color: var(--tableRow-color);
+}
+
+.logoContainer {
+  flex-basis: 250px;
+}
+.profileContainer {
+  display: flex;
+  justify-content: flex-end;
+  flex-basis: 250px;
+}
+.rolesBtn {
+  height: 36px;
+  border: none !important;
+  border-radius: 5px;
+  background-color: #fff;
+  color: #263e50;
+  cursor: pointer;
+}
+
+.activeMenu {
+  background-color: #263e50 !important;
+  color: white !important;
+  font-weight: bold;
+}
+.inActiveMenu {
+  margin: 5px 0 !important;
+}
+
+.notification {
+  width: 15px !important;
+  height: 15px !important;
+  color: white !important;
+  /* margin-top: 5px !important; */
+}
+.notificationContainer {
+  width: 401px;
+  height: 470px;
+}
+/* 125% header */
+@media screen and (max-width: 1433.6px) {
+  .logoContainer {
+    font-size: 10px;
+  }
+  .navitems {
+    font-size: 10px !important;
+  }
+
+  .header_menu {
+    gap: 20px;
+  }
+
+  .header_menu li span {
+    font-size: 12px;
+  }
+
+  .logo {
+    width: 100px;
+    height: 24px;
+  }
+  .metismenu {
+    font-size: 10px;
+  }
+  .rolesBtn {
+    font-size: 10px;
+  }
+  .userProfileDiv {
+    width: 65px !important;
+    height: 40px;
+  }
+  .usersLoaderDiv {
+    width: 30px !important;
+    height: 30px;
+  }
+  .avatar {
+    width: 30px;
+    height: 32px;
+  }
+  .notificationContainer {
+    width: 380px;
+    height: 425px;
+  }
+  .header_menu .header_active::after {
+    top: 55px !important;
+    height: 4px;
+  }
+}
+/* 150% header */
+@media screen and (max-width: 1194.67px) {
+  .logoContainer {
+    font-size: 10px;
+  }
+
+  .navitems {
+    font-size: 10px !important;
+  }
+
+  .header_menu {
+    gap: 10px;
+  }
+
+  .header_menu li span {
+    font-size: 10px;
+  }
+
+  .logo {
+    width: 100px;
+    height: 24px;
+  }
+
+  .metismenu {
+    font-size: 10px;
+  }
+  .rolesBtn {
+    font-size: 10px;
+    width: 50px !important;
+    height: 30px;
+  }
+  .notification {
+    width: 10px !important;
+    height: 10px !important;
+  }
+  .userProfileDiv {
+    width: 60px !important;
+    height: 30px;
+  }
+  .usersLoaderDiv {
+    width: 30px !important;
+    height: 30px;
+  }
+  .avatar {
+    width: 25px;
+    height: 25px;
+  }
+  .header_menu .header_active::after {
+    top: 56px !important;
+    height: 3px;
+  }
+  .notificationContainer {
+    width: 350px;
+    height: 425px;
+  }
+}
+/* 125% header */
+@media screen and (max-width: 1228.8px) {
+  .notification {
+    width: 10px !important;
+    height: 13px !important;
+  }
+  .notificationContainer {
+    width: 318px !important;
+    height: 365px !important;
+  }
+  .header_menu .header_active::after {
+    top: 58px !important;
+    height: 3px;
+  }
+  .header_menu li span {
+    font-size: 11px;
+  }
+  .customNotificationPopover .ant-popover-inner {
+    width: 345px !important;
+    height: 380px;
+  }
+  .menuIconStyle{
+    width:11px !important;
+    height:11px !important;
+  }
+}
+/* 110% header */
+@media screen and (max-width: 1396.36px) {
+  .notification {
+    width: 13px;
+    height: 15px;
+  }
+  .notificationContainer {
+    width: 360px;
+    height: 425px;
+  }
+  .header_menu .header_active::after {
+    top: 58px !important;
+    height: 3px;
+  }
+  .customNotificationPopover .ant-popover-inner {
+    width: 300px !important;
+    height: 325px !important;
+  }
+}
+/* 150% header */
+@media screen and (max-width: 1024px) {
+  .logoContainer {
+    font-size: 10px;
+  }
+  .navitems {
+    font-size: 10px !important;
+  }
+  .header_menu {
+    gap: 10px;
+  }
+  .header_menu li span {
+    font-size: 9px;
+  }
+  .logo {
+    width: 100px;
+    height: 24px;
+  }
+  .metismenu {
+    font-size: 9px;
+  }
+  .rolesBtn {
+    font-size: 10px;
+    width: 50px !important;
+    height: 30px;
+  }
+  .userProfileDiv {
+    width: 55px !important;
+    height: 32px;
+  }
+  .usersLoaderDiv {
+    width: 30px !important;
+    height: 30px;
+  }
+  .notification {
+    width: 10px !important;
+    height: 10px !important;
+  }
+  .avatar {
+    width: 25px;
+    height: 25px;
+    margin-left: 3px;
+  }
+  .header_menu .header_active::after {
+    top: 56px !important;
+    height: 3px;
+  }
+  .notificationContainer {
+    width: 280px !important;
+    height: 310px !important;
+  }
+  .customNotificationPopover .ant-popover-inner {
+    width: 300px !important;
+    height: 325px !important;
+  }
+  .settingsIcon {
+    padding: 4px 4px;
+    margin-right: 5px;
+  }
+  .menuIconStyle{
+    width:10px !important;
+    height:10px !important;
+  }
+}
+

@@ -1,0 +1,10 @@
+export const portalUrl = process.env.NEXT_PUBLIC_PORTAL_BASE_URL;
+export const protalClientId = process.env.NEXT_PUBLIC_PORTAL_CLIENTID;
+export const portalRedirectUrl = process.env.NEXT_PUBLIC_PORTAL_REDIRECT_URI;
+export const serverControl = process.env.NEXT_PUBLIC_NODE_ENV;
+export const isEncrypted = process.env.NEXT_PUBLIC_IS_ENCRYPT;
+export const salt = process.env.NEXT_PUBLIC_SALT;
+export const projectBase = process.env.NEXT_PUBLIC_NODE_ENV;
+export const portalPdfUrl = process.env.NEXT_PUBLIC_PDF_PORTAL_BASE_URL;
+export const pdfControl = process.env.NEXT_PUBLIC_PORTAL_BASE_URL + "manual-coding-db-service/file/getfile/bytes";
+export const buildIdGen = process.env.NEXT_PUBLIC_BUILD_ID

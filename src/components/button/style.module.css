@@ -1,0 +1,19 @@
+.btnColor {
+  background-color: #043069;
+  color: #fff;
+}
+
+.btnColor:hover {
+  background-color: #6c9ddd;
+  color: #fff;
+}
+
+.outer {
+  border: 1px solid #043069;
+  color: #043069;
+}
+
+.outer:hover {
+  background-color: #6c9ddd;
+  color: #fff;
+}
