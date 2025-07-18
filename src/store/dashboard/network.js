@@ -1,12 +1,18 @@
 export async function workFlow() {
-  const options = {
-    method: "GET",
-  };
-  
+  // Mock response since this is a frontend demo
+  // In production, this would call your actual API
   try {
-    const response = await fetch('/api/comments', options);
-    const data = await response.json();
-    return data;
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Return mock data
+    return {
+      success: true,
+      data: {
+        workflow: 'active',
+        status: 'ready'
+      }
+    };
   } catch (error) {
     console.error('Error fetching workflow data:', error);
     return null;
