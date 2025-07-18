@@ -1,100 +1,127 @@
 import React, { useState, useEffect } from 'react';
-import { Input, Space, Card, Typography, Tag, Button, message, Row, Col, Badge, Tooltip } from 'antd';
-import { SearchOutlined, UserOutlined, CalendarOutlined, IdcardOutlined, MessageOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { Input, Space, Card, Typography, Tag, Button, message, Row, Col } from 'antd';
+import { SearchOutlined, UserOutlined, MessageOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import axios from 'axios';
 import ChatComponent from '../patientChat';
+import apiService from '../../../services/apiService';
 import styles from './styles.module.css';
+import socketService from '../../../services/socketService';
 
 const { Search } = Input;
 const { Title, Text } = Typography;
 
+// Dummy patient data
+
+const dummyPatients = [
+  {
+  key: '1',
+  patientName: 'Wood, Robert',
+  npi: '1497194153',
+  ptan: '454852156',
+  tin: '312193',
+  medicareId: '7CQ1NF4JC21',
+  dos: '5/15/2025',
+  dob: '3/1/1946',
+  status: 'active',
+  chatCompleted: false
+  },
+  {
+  key: '2',
+  patientName: 'FINK, DIANE',
+  npi: '1497194153',
+  ptan: '454852156',
+  tin: '312193',
+  medicareId: '2JE9WC1MH00',
+  dos: '7/15/2025',
+  dob: '9/23/1958',
+  status: 'pending',
+  chatCompleted: true
+  },
+  {
+  key: '3',
+  patientName: 'Vincent, Linda',
+  npi: '1497194153',
+  ptan: '454852156',
+  tin: '312193',
+  medicareId: '6E46XJ0FM42',
+  dos: '7/15/2025',
+  dob: '3/10/1951',
+  status: 'active',
+  chatCompleted: false
+  },
+  {
+  key: '4',
+  patientName: 'Emily Davis',
+  npi: '1497194153',
+  ptan: '454852156',
+  tin: '312193',
+  medicareId: 'MED004567',
+  dos: '2024-01-18',
+  dob: '1985-11-08',
+  status: 'inactive',
+  chatCompleted: false
+  },
+  {
+  key: '5',
+  patientName: 'Suvarnasuddhi, Khanan',
+  npi: '1497194153',
+  ptan: '454852156',
+  tin: '312193',
+  medicareId: '3HW6QC3QK44',
+  dos: '7/15/2025',
+  dob: '6/15/1956',
+  status: 'active',
+  chatCompleted: false
+  },
+  {
+  key: '6',
+  patientName: 'Adise, Nancy',
+  npi: '1497194153',
+  ptan: '454852156',
+  tin: '312193',
+  medicareId: '3XJ8YG5QJ43',
+  dos: '15/5/2025',
+  dob: '6/8/1959',
+  status: 'pending',
+  chatCompleted: false
+  }
+  ];
+
 const PatientList = () => {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [searchText, setSearchText] = useState('');
-  const [filteredPatients, setFilteredPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [chatCompletionStatus, setChatCompletionStatus] = useState({});
+  const [callingPatientId, setCallingPatientId] = useState(null);
 
-    // Your provided data with chat completion status
-  const samplePatients = [
-    {
-      key: '1',
-      npi: '1972941862',
-      ptan: '312190',
-      tin: '52156',
-      medicareId: 'MC04Q0CL2C017',
-      patientName: 'Windsor, Barbara',
-      dos: '7/11/2025',
-      dob: '8/2/1948',
-      status: 'active',
-      chatCompleted: false // Chat enabled - can start chatting
-    },
-    {
-      key: '2',
-      npi: '1972941862',
-      ptan: '312190',
-      tin: '52156',
-      medicareId: 'MC04Q0CS4C017',
-      patientName: 'Gallacher, Angela',
-      dos: '7/11/2025',
-      dob: '7/4/1954',
-      status: 'active',
-      chatCompleted: true // Chat completed - disabled
-    },
-    {
-      key: '3',
-      npi: '1972941862',
-      ptan: '312190',
-      tin: '52156',
-      medicareId: 'MC04Q0CT1C017',
-      patientName: 'Jedrlinic, Elizabeth',
-      dos: '7/11/2025',
-      dob: '2/19/1947',
-      status: 'pending',
-      chatCompleted: false // Chat enabled - can start chatting
-    },
-    {
-      key: '4',
-      npi: '1972941862',
-      ptan: '312190',
-      tin: '52156',
-      medicareId: 'MC03GEDB7C017',
-      patientName: 'LEE, WILLIAM',
-      dos: '7/29/2024',
-      dob: '6/2/1961',
-      status: 'active',
-      chatCompleted: true // Chat completed - disabled
-    },
-    {
-      key: '5',
-      npi: '1972941862',
-      ptan: '312190',
-      tin: '52156',
-      medicareId: 'MC04GRBP7C017',
-      patientName: 'Butler, Francis',
-      dos: '5/8/2025',
-      dob: '1/18/1948',
-      status: 'active',
-      chatCompleted: false // Chat enabled - can start chatting
-    }
-  ];
-
-  // Load patients data
+  // Load patients data from dummy data
   useEffect(() => {
     const loadPatients = async () => {
       setLoading(true);
+      
       try {
-        setPatients(samplePatients);
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Initialize chat completion status from patient data
+        // Use dummy data instead of API call
+        setPatients(dummyPatients);
+        
         const initialStatus = {};
-        samplePatients.forEach(patient => {
-          initialStatus[patient.key] = patient.chatCompleted || false;
+        dummyPatients.forEach(patient => {
+          if (patient && patient.key) {
+            initialStatus[patient.key] = patient.chatCompleted || false;
+          }
         });
         setChatCompletionStatus(initialStatus);
+        
+        console.log('✅ Loaded dummy patients:', dummyPatients.length);
+        
       } catch (error) {
         console.error('Error loading patients:', error);
+        setPatients([]);
+        setChatCompletionStatus({});
+        message.error('Failed to load patients');
       } finally {
         setLoading(false);
       }
@@ -102,22 +129,6 @@ const PatientList = () => {
 
     loadPatients();
   }, []);
-
-  // Filter patients based on search text
-  useEffect(() => {
-    if (!searchText.trim()) {
-      setFilteredPatients(patients);
-      return;
-    }
-
-    const filtered = patients.filter(patient =>
-      patient.patientName.toLowerCase().includes(searchText.toLowerCase()) ||
-      patient.medicareId.toLowerCase().includes(searchText.toLowerCase()) ||
-      patient.npi.includes(searchText) ||
-      patient.ptan.includes(searchText)
-    );
-    setFilteredPatients(filtered);
-  }, [searchText, patients]);
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -139,24 +150,73 @@ const PatientList = () => {
     }
   };
 
-  // Handle search
-  const handleSearch = (value) => {
-    setSearchText(value);
-  };
-
-  // Handle patient selection
-  const handlePatientSelect = (patient) => {
-    setSelectedPatient(patient);
-  };
-
   // Handle chat click
-  const handleChatClick = (record) => {
+  const handleChatClick = async (record) => {
     if (record.chatCompleted) {
       message.warning(`Chat with ${record.patientName} has already been completed.`);
       return;
     }
-    setSelectedPatient(record);
-    message.info(`Starting chat with ${record.patientName}`);
+    
+    setCallingPatientId(record.key);
+    
+    try {
+      console.log('📞 Starting call process for patient:', record.key);
+      
+      // Step 1: Try to call the connect API to get callSid
+      let callResponse = await apiService.connectCall();
+      
+      // If real API fails, use mock data for testing
+      if (!callResponse.success) {
+        console.log('⚠️ Real API failed, using mock data for testing...');
+        callResponse = await apiService.connectCallMock();
+        message.warning('Using mock call data for testing (API unavailable)');
+      }
+      
+      // Debug: Log the full response to see what we're getting
+      console.log('🔍 Full API Response:', callResponse);
+      console.log('🔍 Response data:', callResponse.data);
+      console.log('🔍 Response data type:', typeof callResponse.data);
+      
+      // Handle different response formats
+      let callSid;
+      
+      if (typeof callResponse.data === 'string') {
+        // API returns callSid directly as a string
+        callSid = callResponse.data;
+        console.log('✅ Found callSid as direct string:', callSid);
+      } else if (typeof callResponse.data === 'object' && callResponse.data !== null) {
+        // API returns an object, try to find callSid in various fields
+        console.log('🔍 Response data keys:', Object.keys(callResponse.data));
+        callSid = callResponse.data?.callSid || 
+                 callResponse.data?.id || 
+                 callResponse.data?.call_id || 
+                 callResponse.data?.callId || 
+                 callResponse.data?.sid ||
+                 callResponse.data?.CallSid;
+      }
+      
+      if (!callSid) {
+        console.error('❌ No callSid found in response. Response:', callResponse.data);
+        throw new Error(`No callSid received from call API. Response: ${JSON.stringify(callResponse.data)}`);
+      }
+      
+      console.log('✅ Received callSid:', callSid);
+      
+      // Step 2: Set selected patient to trigger chat
+      setSelectedPatient(record);
+      
+      // Step 3: Connect to WebSocket with callSid
+      await socketService.connect(callSid);
+      
+      message.success(`Call connected with ${record.patientName} (Call ID: ${callSid})`);
+      
+    } catch (error) {
+      console.error('❌ Error starting call:', error);
+      message.error(`Failed to start call: ${error.message}`);
+      setSelectedPatient(null);
+    } finally {
+      setCallingPatientId(null);
+    }
   };
 
   // Handle chat completion
@@ -166,7 +226,6 @@ const PatientList = () => {
       [patientId]: isCompleted
     }));
     
-    // Update patient status in the list
     setPatients(prev => prev.map(patient => 
       patient.key === patientId 
         ? { ...patient, chatCompleted: isCompleted }
@@ -174,11 +233,112 @@ const PatientList = () => {
     ));
   };
 
-  // Check if patient has completed chat
-  const isChatCompleted = (patientId) => {
-    const patient = patients.find(p => p.key === patientId);
-    return patient ? patient.chatCompleted : false;
+  // Manual retry function
+  const handleRetry = () => {
+    setLoading(true);
+    setPatients([]);
+    setChatCompletionStatus({});
+    
+    setTimeout(() => {
+      const loadPatients = async () => {
+        try {
+          // Simulate API delay
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Use dummy data instead of API call
+          setPatients(dummyPatients);
+          
+          const initialStatus = {};
+          dummyPatients.forEach(patient => {
+            if (patient && patient.key) {
+              initialStatus[patient.key] = patient.chatCompleted || false;
+            }
+          });
+          setChatCompletionStatus(initialStatus);
+          message.success('Patients loaded successfully');
+          
+        } catch (error) {
+          console.error('Retry failed:', error);
+          setPatients([]);
+          message.error('Failed to load patients');
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      loadPatients();
+    }, 1000);
   };
+
+  const renderPatientCard = (patient) => (
+    <Card
+      key={patient.key}
+      size="small"
+      className={styles.patientCard}
+      bodyStyle={{ padding: '16px' }}
+    >
+      <div className={styles.patientInfoLayout}>
+        <div className={styles.patientInfoContent}>
+          <div className={styles.patientNameSection}>
+            <UserOutlined className={styles.patientIcon} />
+            <Text strong className={styles.patientName}>
+              {patient.patientName}
+            </Text>
+          </div>
+          
+          <div className={styles.patientDetailsGrid}>
+            <div>
+              <Text type="secondary" className={styles.detailLabel}>NPI:</Text>
+              <br />
+              <Text code className={styles.codeElement}>{patient.npi}</Text>
+            </div>
+            <div>
+              <Text type="secondary" className={styles.detailLabel}>PTAN:</Text>
+              <br />
+              <Text strong className={styles.detailValue}>{patient.ptan}</Text>
+            </div>
+            <div>
+              <Text type="secondary" className={styles.detailLabel}>TIN:</Text>
+              <br />
+              <Text className={styles.detailValue}>{patient.tin}</Text>
+            </div>
+            <div>
+              <Text type="secondary" className={styles.detailLabel}>Medicare ID:</Text>
+              <br />
+              <Text code className={styles.codeElement}>{patient.medicareId}</Text>
+            </div>
+            <div>
+              <Text type="secondary" className={styles.detailLabel}>DOS:</Text>
+              <br />
+              <Text className={styles.detailValue}>{formatDate(patient.dos)}</Text>
+            </div>
+            <div>
+              <Text type="secondary" className={styles.detailLabel}>DOB:</Text>
+              <br />
+              <Text className={styles.detailValue}>{formatDate(patient.dob)}</Text>
+            </div>
+          </div>
+        </div>
+        
+        <div className={styles.actionButtons}>
+          <Button
+            type={patient.chatCompleted ? "default" : "primary"}
+            icon={<MessageOutlined />}
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleChatClick(patient);
+            }}
+            disabled={patient.chatCompleted || callingPatientId === patient.key}
+            loading={callingPatientId === patient.key}
+            className={patient.chatCompleted ? `${styles.chatButton} ${styles.chatButtonCompleted}` : styles.chatButton}
+          >
+            {patient.chatCompleted ? 'Completed' : callingPatientId === patient.key ? 'Connecting...' : 'Call'}
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
 
   return (
     <div className={styles.patientListContainer}>
@@ -198,104 +358,44 @@ const PatientList = () => {
             bodyStyle={{ padding: '24px' }}
           >
             <Space direction="vertical" style={{ width: '100%' }} size="middle">
-              {/* Search Bar */}
-              <Search
-                placeholder="Search by patient name, Medicare ID, NPI, or PTAN..."
-                allowClear
-                enterButton={<SearchOutlined />}
-                size="large"
-                onSearch={handleSearch}
-                onChange={(e) => setSearchText(e.target.value)}
-                style={{ width: '100%' }}
-              />
-
               {/* Patient Cards Container */}
               <div className={styles.patientCardsContainer}>
-                {filteredPatients.map((patient) => {
-                  const isSelected = selectedPatient?.key === patient.key;
-                  return (
-                    <Card
-                      key={patient.key}
-                      size="small"
-                      className={`${styles.patientCard} ${isSelected ? styles.patientCardSelected : ''}`}
-                      hoverable
-                      bodyStyle={{ padding: '16px' }}
-                      onClick={() => handlePatientSelect(patient)}
+                {loading ? (
+                  <div style={{ textAlign: 'center', padding: '40px' }}>
+                    <div className="ant-spin ant-spin-lg ant-spin-spinning">
+                      <span className="ant-spin-dot ant-spin-dot-spin">
+                        <i className="ant-spin-dot-item"></i>
+                        <i className="ant-spin-dot-item"></i>
+                        <i className="ant-spin-dot-item"></i>
+                        <i className="ant-spin-dot-item"></i>
+                      </span>
+                    </div>
+                    <br />
+                    <Text type="secondary">Loading patients...</Text>
+                  </div>
+                ) : patients.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '40px' }}>
+                    <div style={{ marginBottom: '16px' }}>
+                      <UserOutlined style={{ fontSize: '48px', color: '#d9d9d9' }} />
+                    </div>
+                    <Text type="secondary" style={{ fontSize: '16px', display: 'block', marginBottom: '8px' }}>
+                      No patients available.
+                    </Text>
+                    <Text type="secondary" style={{ fontSize: '14px', display: 'block', marginBottom: '16px' }}>
+                      Please check your connection or try again later.
+                    </Text>
+                    <Button 
+                      type="primary" 
+                      onClick={handleRetry}
+                      icon={<SearchOutlined />}
+                      loading={loading}
                     >
-                      <div className={styles.patientInfoLayout}>
-                        <div className={styles.patientInfoContent}>
-                          <div className={styles.patientNameSection}>
-                            <UserOutlined className={`${styles.patientIcon} ${isSelected ? styles.patientIconSelected : ''}`} />
-                            <Text strong className={`${styles.patientName} ${isSelected ? styles.patientNameSelected : ''}`}>
-                              {patient.patientName}
-                            </Text>
-                            <Tag 
-                              color={patient.chatCompleted ? "#52c41a" : getStatusColor(patient.status)} 
-                              className={styles.statusTag}
-                              icon={patient.chatCompleted ? <CheckCircleOutlined /> : null}
-                            >
-                              {patient.chatCompleted ? 'COMPLETED' : patient.status?.toUpperCase()}
-                            </Tag>
-                          </div>
-                          
-                          <div className={`${styles.patientDetailsGrid} ${isSelected ? styles.patientDetailsGridSelected : ''}`}>
-                            <div>
-                              <Text type="secondary" className={`${styles.detailLabel} ${isSelected ? styles.detailLabelSelected : ''}`}>NPI:</Text>
-                              <br />
-                              <Text code className={`${styles.codeElement} ${isSelected ? styles.codeElementSelected : ''}`}>{patient.npi}</Text>
-                            </div>
-                            <div>
-                              <Text type="secondary" className={`${styles.detailLabel} ${isSelected ? styles.detailLabelSelected : ''}`}>PTAN:</Text>
-                              <br />
-                              <Text strong className={`${styles.detailValue} ${isSelected ? styles.detailValueSelected : ''}`}>{patient.ptan}</Text>
-                            </div>
-                            <div>
-                              <Text type="secondary" className={`${styles.detailLabel} ${isSelected ? styles.detailLabelSelected : ''}`}>TIN:</Text>
-                              <br />
-                              <Text className={`${styles.detailValue} ${isSelected ? styles.detailValueSelected : ''}`}>{patient.tin}</Text>
-                            </div>
-                            <div>
-                              <Text type="secondary" className={`${styles.detailLabel} ${isSelected ? styles.detailLabelSelected : ''}`}>Medicare ID:</Text>
-                              <br />
-                              <Text code className={`${styles.codeElement} ${isSelected ? styles.codeElementSelected : ''}`}>{patient.medicareId}</Text>
-                            </div>
-                            <div>
-                              <Text type="secondary" className={`${styles.detailLabel} ${isSelected ? styles.detailLabelSelected : ''}`}>DOS:</Text>
-                              <br />
-                              <Text className={`${styles.detailValue} ${isSelected ? styles.detailValueSelected : ''}`}>{formatDate(patient.dos)}</Text>
-                            </div>
-                            <div>
-                              <Text type="secondary" className={`${styles.detailLabel} ${isSelected ? styles.detailLabelSelected : ''}`}>DOB:</Text>
-                              <br />
-                              <Text className={`${styles.detailValue} ${isSelected ? styles.detailValueSelected : ''}`}>{formatDate(patient.dob)}</Text>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className={styles.actionButtons}>
-                          {patient.chatCompleted && (
-                            <Tooltip title="Chat completed">
-                              <CheckCircleOutlined className={`${styles.completionIcon} ${isSelected ? styles.completionIconSelected : ''}`} />
-                            </Tooltip>
-                          )}
-                          <Button
-                            type={patient.chatCompleted ? "default" : "primary"}
-                            icon={<MessageOutlined />}
-                            size="small"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleChatClick(patient);
-                            }}
-                            disabled={patient.chatCompleted}
-                            className={`${styles.chatButton} ${patient.chatCompleted ? styles.chatButtonCompleted : ''} ${isSelected ? styles.chatButtonSelected : ''}`}
-                          >
-                            {patient.chatCompleted ? 'Completed' : 'Call'}
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })}
+                      Retry
+                    </Button>
+                  </div>
+                ) : (
+                  (patients || []).filter(patient => patient && patient.key).map(renderPatientCard)
+                )}
               </div>
             </Space>
           </Card>

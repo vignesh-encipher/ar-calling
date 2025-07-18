@@ -3,6 +3,35 @@
   padding: 24px;
   background-color: #f8fafc;
   min-height: 100vh;
+  overflow-y: auto;
+}
+
+/* Scrollbar Styling for Main Container */
+.patientListContainer::-webkit-scrollbar {
+  width: 10px;
+}
+
+.patientListContainer::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.patientListContainer::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.patientListContainer::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Hide scrollbar when not needed */
+.patientListContainer:not(:hover)::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+.patientListContainer:not(:hover)::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 /* Patient List Card */
@@ -32,6 +61,34 @@
   max-height: 600px;
   overflow-y: auto;
   padding-right: 8px;
+}
+
+/* Scrollbar Styling for Patient Cards */
+.patientCardsContainer::-webkit-scrollbar {
+  width: 8px;
+}
+
+.patientCardsContainer::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.patientCardsContainer::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.patientCardsContainer::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Hide scrollbar when not needed */
+.patientCardsContainer:not(:hover)::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+.patientCardsContainer:not(:hover)::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 /* Individual Patient Card */

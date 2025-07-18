@@ -20,10 +20,11 @@ import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   ExclamationCircleOutlined,
-  CloseOutlined
+  CloseOutlined,
+  PhoneOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import chatService from '../../../services/chatService';
+import socketService from '../../../services/socketService';
 import styles from './styles.module.css';
 
 const { TextArea } = Input;
@@ -35,12 +36,16 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [chatCompletionStatus, setChatCompletionStatus] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [socketConnected, setSocketConnected] = useState(false);
+  const [callStatus, setCallStatus] = useState('idle'); // idle, connecting, connected, failed
   const messagesEndRef = useRef(null);
   const [chatHistory, setChatHistory] = useState([]);
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
   };
 
   useEffect(() => {
@@ -52,106 +57,149 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
     if (selectedPatient) {
       loadChatHistory(selectedPatient.key);
       checkChatCompletionStatus(selectedPatient.key);
+      setupSocketHandlers();
     }
   }, [selectedPatient]);
 
-  // Load chat history from backend
-  const loadChatHistory = async (patientId) => {
-    setLoading(true);
-    try {
-      const response = await chatService.getChatHistory(patientId);
-      
-      if (response.success) {
-        setChatHistory(response.data.messages);
-        setMessages(response.data.messages);
-      } else {
-        setChatHistory([]);
-        setMessages([]);
+  // Setup WebSocket handlers
+  const setupSocketHandlers = () => {
+    // Register message handlers for different message types
+    socketService.onMessage('chat', handleSocketMessage);
+    socketService.onMessage('typing', handleTypingMessage);
+    socketService.onMessage('history', handleHistoryMessage);
+    socketService.onMessage('system', handleSystemMessage);
+    socketService.onMessage('call_status', handleCallStatusMessage);
+    
+    // Also handle raw WebSocket messages (for messageType format)
+    socketService.onMessage('Message received', handleSocketMessage);
+    socketService.onMessage('Typing', handleTypingMessage);
+    
+    // Register connection handler
+    socketService.onConnection((status) => {
+      setSocketConnected(status === 'connected');
+      if (status === 'connected') {
+        setCallStatus('connected');
+        message.success('Call connected successfully');
+        setLoading(false);
+      } else if (status === 'disconnected') {
+        setCallStatus('failed');
+        message.warning('Call disconnected');
+        setLoading(false);
+      } else if (status === 'error') {
+        setCallStatus('failed');
+        message.error('Call connection failed');
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error loading chat history:', error);
-      setChatHistory([]);
-      setMessages([]);
-    } finally {
+    });
+  };
+
+  // Handle socket messages
+  const handleSocketMessage = (message) => {
+    console.log('💬 Received chat message:', message);
+    
+    // Handle different message formats from WebSocket
+    if (message.messageType === 'Message received') {
+      const chatMessage = {
+        id: Date.now() + Math.random(),
+        text: message.text,
+        sender: {
+          name: message.name === 'IVR' ? 'IVR System' : message.name === 'you' || message.name === 'Patient' ? 'You' : message.name || 'System'
+        },
+        timestamp: new Date().toISOString()
+      };
+      console.log('📝 Adding message to chat:', chatMessage);
+      setMessages(prev => [...prev, chatMessage]);
+    } else if (message.type === 'chat') {
+      // Handle standard chat format
+      setMessages(prev => [...prev, message]);
+    } else {
+      // Handle other message types
+      console.log('📨 Other message type:', message);
+    }
+  };
+
+  // Handle typing messages
+  const handleTypingMessage = (message) => {
+    console.log('⌨️ Received typing indicator:', message);
+    
+    if (message.messageType === 'Typing') {
+      // Handle WebSocket typing format - only show for IVR
+      if (message.name === 'IVR') {
+        setIsTyping(true);
+        // Auto-hide typing indicator after 3 seconds
+        setTimeout(() => setIsTyping(false), 3000);
+      }
+    } else if (message.type === 'typing') {
+      // Handle standard typing format
+      if (message.sender.name === 'System' || message.sender.name === 'IVR System' || message.sender.name === 'IVR') {
+        setIsTyping(message.isTyping);
+      }
+    }
+  };
+
+  // Handle history messages
+  const handleHistoryMessage = (message) => {
+    console.log('📚 Received chat history:', message);
+    if (message.messages && Array.isArray(message.messages)) {
+      setMessages(message.messages);
+      setLoading(false);
+    } else if (message.data && Array.isArray(message.data)) {
+      setMessages(message.data);
+      setLoading(false);
+    } else {
+      console.log('📚 No valid messages in history response');
       setLoading(false);
     }
   };
 
-  // Check chat completion status from backend
+  // Handle system messages
+  const handleSystemMessage = (message) => {
+    console.log('System message:', message);
+  };
+
+  // Handle call status messages
+  const handleCallStatusMessage = (message) => {
+    console.log('📞 Call status update:', message);
+    setCallStatus(message.status || 'connected');
+  };
+
+  // Load chat history from WebSocket (no dummy data)
+  const loadChatHistory = async (patientId) => {
+    setLoading(true);
+    setMessages([]); // Start with empty messages, wait for WebSocket data
+    console.log('🔄 Waiting for WebSocket chat history...');
+  };
+
+  // Check chat completion status (no dummy data)
   const checkChatCompletionStatus = async (patientId) => {
-    try {
-      const response = await chatService.checkChatStatus(patientId);
-      
-      if (response.success) {
-        setChatCompletionStatus(response.data.isCompleted);
-      } else {
-        setChatCompletionStatus(selectedPatient?.chatCompleted || false);
-      }
-    } catch (error) {
-      console.error('Error checking chat completion status:', error);
-      setChatCompletionStatus(selectedPatient?.chatCompleted || false);
-    }
+    setChatCompletionStatus(selectedPatient?.chatCompleted || false);
   };
 
-  // Simulate conversation flow automatically
-  const simulateConversation = async () => {
-    if (!selectedPatient) return;
-
-    // Get conversation scenario based on patient ID
-    const response = await chatService.getChatHistory(selectedPatient.key);
-    const scenario = response.data.scenario || 'medicare_coverage';
-    
-    // Get conversation flow for this scenario
-    const conversationSteps = chatService.generateConversationFlow(scenario);
-
-    for (let i = 0; i < conversationSteps.length; i++) {
-      const step = conversationSteps[i];
-      
-      // Show typing indicator for User B
-      if (step.sender.id === chatService.mockUsers.userB.id) {
-        setIsTyping(true);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setIsTyping(false);
-      }
-
-      // Add message
-      const newMessage = {
-        id: Date.now() + i,
-        text: step.text,
-        sender: step.sender,
-        timestamp: new Date().toISOString(),
-        patientId: selectedPatient.key
-      };
-
-      setMessages(prev => [...prev, newMessage]);
-
-      // Check if conversation is completed
-      if (step.isCompleted) {
-        setChatCompletionStatus(true);
-        onChatComplete && onChatComplete(selectedPatient.key, true);
-        message.success('Chat completed successfully!');
-        break;
-      }
-
-      // Wait before next message
-      await new Promise(resolve => setTimeout(resolve, step.delay));
-    }
-  };
-
-  // Start conversation when patient is selected
-  useEffect(() => {
-    if (selectedPatient && messages.length === 1) {
-      // Start conversation after initial greeting
-      setTimeout(() => {
-        simulateConversation();
-      }, 2000);
-    }
-  }, [selectedPatient, messages.length]);
-
-  // Legacy send message function (kept for compatibility)
+  // Send message via WebSocket
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedPatient) return;
-    // This function is now disabled since we're using automatic conversation
+    if (!newMessage.trim() || !selectedPatient || !socketConnected) return;
+    
+    // Send in the format expected by the WebSocket
+    const wsMessageData = {
+      messageType: 'Message sent',
+      text: newMessage,
+      name: 'Patient'
+    };
+    
+    if (socketService.sendMessage(wsMessageData)) {
+      // Also add the message to local state immediately for better UX
+      const localMessage = {
+        id: Date.now() + Math.random(),
+        text: newMessage,
+        sender: { name: 'You' },
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, localMessage]);
+      setNewMessage('');
+      message.success('Message sent!');
+    } else {
+      message.error('Failed to send message');
+    }
   };
 
   // Handle Enter key press
@@ -167,6 +215,24 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
     return dayjs(timestamp).format('HH:mm');
   };
 
+  // Generate avatar based on sender name
+  const generateAvatar = (sender) => {
+    if (sender.name === 'You' || sender.name === 'Patient' || sender.name === 'User') {
+      return <UserOutlined />;
+    } else if (sender.name === 'System' || sender.name === 'IVR System' || sender.name === 'Bot') {
+      return <RobotOutlined />;
+    } else {
+      // Generate initials from name for other senders
+      const initials = sender.name
+        .split(' ')
+        .map(word => word.charAt(0))
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+      return initials;
+    }
+  };
+
   // Get message bubble style
   const getMessageStyle = (sender, isError = false) => {
     const baseStyle = {
@@ -178,7 +244,7 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
       position: 'relative'
     };
 
-    if (sender.id === chatService.mockUsers.userA.id) {
+    if (sender.name === 'You' || sender.name === 'Patient' || sender.name === 'User') {
       return {
         ...baseStyle,
         backgroundColor: '#1890ff',
@@ -197,6 +263,35 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
     }
   };
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      socketService.disconnect();
+    };
+  }, []);
+
+  // Prevent body scrolling when chat is active
+  useEffect(() => {
+    if (selectedPatient) {
+      // Prevent body scrolling when chat is active
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+    } else {
+      // Restore body scrolling when chat is closed
+      document.body.style.overflow = 'auto';
+      document.body.style.position = 'static';
+      document.body.style.width = 'auto';
+    }
+
+    // Cleanup function to restore scrolling when component unmounts
+    return () => {
+      document.body.style.overflow = 'auto';
+      document.body.style.position = 'static';
+      document.body.style.width = 'auto';
+    };
+  }, [selectedPatient]);
+
   if (!selectedPatient) {
     return (
       <Card 
@@ -213,9 +308,9 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
       >
         <div className={styles.welcomeState}>
           <div className={styles.welcomeContent}>
-            <RobotOutlined className={styles.welcomeIcon} />
+            <PhoneOutlined className={styles.welcomeIcon} />
             <br />
-            Select a patient to start chatting
+            Select a patient and click Call to start
           </div>
         </div>
       </Card>
@@ -228,33 +323,18 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
         <div className={styles.chatHeader}>
           <div className={styles.chatHeaderContent}>
             <Title level={4} className={styles.chatTitle}>
-              Chat with {selectedPatient.patientName}
+              Call with IVR
             </Title>
-            <Space>
-              <Badge 
-                status={chatCompletionStatus ? "success" : "processing"} 
-                text={
-                  <Text className={styles.chatStatus}>
-                    {chatCompletionStatus ? 'Completed' : 'In Progress'}
-                  </Text>
-                }
-              />
-              {chatCompletionStatus && (
-                <Tooltip title="Chat completed">
-                  <CheckCircleOutlined className={styles.chatCompletionIcon} />
-                </Tooltip>
-              )}
-              <Button
-                type="primary"
-                danger
-                size="large"
-                icon={<CloseOutlined />}
-                onClick={onClose}
-                className={styles.exitButton}
-              >
-                Exit Chat
-              </Button>
-            </Space>
+            <Button
+              type="primary"
+              danger
+              size="large"
+              icon={<CloseOutlined />}
+              onClick={onClose}
+              className={styles.exitButton}
+            >
+              End Call
+            </Button>
           </div>
         </div>
       }
@@ -277,18 +357,18 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
       </div>
 
       {/* Messages Area */}
-      <div className={styles.messagesArea}>
+      <div className={`${styles.messagesArea} ${messages.length > 0 ? styles.hasMessages : ''}`}>
         {loading ? (
           <div className={styles.loadingContainer}>
             <Spin size="large" />
             <br />
-            <Text type="secondary">Loading chat history...</Text>
+            <Text type="secondary">Connecting to call...</Text>
           </div>
         ) : messages.length === 0 ? (
           <div className={styles.emptyState}>
-            <RobotOutlined className={styles.emptyStateIcon} />
+            <PhoneOutlined className={styles.emptyStateIcon} />
             <br />
-            <Text>Start a conversation with {selectedPatient.patientName}</Text>
+            <Text>Call connected. Start your conversation with {selectedPatient.patientName}</Text>
           </div>
         ) : (
           <div>
@@ -296,13 +376,13 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
               <div key={msg.id} className={styles.messageContainer}>
                 <div className={styles.messageLayout}>
                   <Avatar 
-                    icon={msg.sender.id === chatService.mockUsers.userA.id ? <UserOutlined /> : <RobotOutlined />}
-                    className={msg.sender.id === chatService.mockUsers.userA.id ? styles.userAvatar : styles.botAvatar}
+                    icon={generateAvatar(msg.sender)}
+                    className={msg.sender.name === 'You' || msg.sender.name === 'Patient' || msg.sender.name === 'User' ? styles.userAvatar : styles.botAvatar}
                   />
                   <div className={styles.messageContent}>
-                    <div className={`${styles.messageBubble} ${msg.sender.id === chatService.mockUsers.userA.id ? styles.messageBubbleUser : styles.messageBubbleBot} ${msg.isError ? styles.messageBubbleError : ''}`}>
+                    <div className={`${styles.messageBubble} ${msg.sender.name === 'You' || msg.sender.name === 'Patient' || msg.sender.name === 'User' ? styles.messageBubbleUser : styles.messageBubbleBot} ${msg.isError ? styles.messageBubbleError : ''}`}>
                       <div style={{ marginBottom: '4px' }}>
-                        <Text strong style={{ fontSize: '12px', color: msg.sender.id === chatService.mockUsers.userA.id ? 'rgba(255,255,255,0.8)' : '#666' }}>
+                        <Text strong style={{ fontSize: '12px', color: msg.sender.name === 'You' || msg.sender.name === 'Patient' || msg.sender.name === 'User' ? 'rgba(255,255,255,0.8)' : '#666' }}>
                           {msg.sender.name}
                         </Text>
                       </div>
@@ -318,7 +398,7 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
             
             {isTyping && (
               <div className={styles.typingIndicator}>
-                <Avatar icon={<RobotOutlined />} className={styles.botAvatar} />
+                <Avatar icon={generateAvatar({ name: 'IVR System' })} className={styles.botAvatar} />
                 <div className={styles.messageBubble + ' ' + styles.messageBubbleBot}>
                   <Space>
                     <ClockCircleOutlined />
@@ -333,12 +413,13 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
         )}
       </div>
 
-      {/* Input Area - Hidden for automatic conversation */}
-      {!chatCompletionStatus && (
+      {/* No Input Area - Read Only Chat */}
+      
+      {!socketConnected && (
         <div className={styles.inputArea}>
           <div style={{ textAlign: 'center', padding: '16px', color: '#8c8c8c' }}>
             <ClockCircleOutlined style={{ marginRight: '8px' }} />
-            Conversation in progress...
+            Connecting to call...
           </div>
         </div>
       )}
@@ -347,7 +428,7 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
         <div className={styles.inputArea}>
           <div className={styles.completionTag}>
             <Tag color="success" icon={<CheckCircleOutlined />}>
-              Chat completed
+              Call completed
             </Tag>
           </div>
         </div>
