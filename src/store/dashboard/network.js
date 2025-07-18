@@ -1,12 +1,14 @@
-import { requestPortal } from "../../utils/network";
-
 export async function workFlow() {
   const options = {
     method: "GET",
   };
-  const data = await requestPortal(
-    `/comments`,
-    options
-  );
-  return data;
+  
+  try {
+    const response = await fetch('/api/comments', options);
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching workflow data:', error);
+    return null;
+  }
 }
