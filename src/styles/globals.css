@@ -1,3 +1,5 @@
+@import 'antd/dist/reset.css'; /* ✅ Ant Design v5 global reset */
+
 :root {
   --app-primary: #04306f;
   --app-primary-hover: #6c9ddd;

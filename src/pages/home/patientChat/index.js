@@ -24,7 +24,7 @@ import {
   PhoneOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import socketService from '../../../services/socketService';
+import socketService from '../../../utils/network/socketService';
 import styles from './styles.module.css';
 
 const { TextArea } = Input;

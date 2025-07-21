@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Input, Space, Card, Typography, Tag, Button, message, Row, Col } from 'antd';
 import { SearchOutlined, UserOutlined, MessageOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import axios from 'axios';
+
 import ChatComponent from '../patientChat';
-import apiService from '../../../services/apiService';
+import { apiService } from '../../../utils/network';
 import styles from './styles.module.css';
-import socketService from '../../../services/socketService';
+import socketService from '../../../utils/network/socketService';
 
 const { Search } = Input;
 const { Title, Text } = Typography;
