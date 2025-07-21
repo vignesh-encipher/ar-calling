@@ -9,22 +9,22 @@ import {
   Divider, 
   Tag, 
   message, 
-  Spin,
-  Tooltip,
-  Badge
+  Spin, 
+  Tooltip, 
+  Badge 
 } from 'antd';
 import { 
   SendOutlined, 
   UserOutlined, 
   RobotOutlined, 
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  ExclamationCircleOutlined,
-  CloseOutlined,
-  PhoneOutlined
+  CheckCircleOutlined, 
+  ClockCircleOutlined, 
+  ExclamationCircleOutlined, 
+  PhoneOutlined 
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import socketService from '../../../utils/network/socketService';
+import { apiService } from '../../../utils/network';
 import styles from './styles.module.css';
 
 const { TextArea } = Input;
@@ -38,8 +38,12 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [socketConnected, setSocketConnected] = useState(false);
   const [callStatus, setCallStatus] = useState('idle'); // idle, connecting, connected, failed
+  const [voiceEnabled, setVoiceEnabled] = useState(false); // Voice/speech toggle - disabled by default
+
   const messagesEndRef = useRef(null);
   const [chatHistory, setChatHistory] = useState([]);
+
+
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -58,8 +62,13 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
       loadChatHistory(selectedPatient.key);
       checkChatCompletionStatus(selectedPatient.key);
       setupSocketHandlers();
+      
+      // Try to get call ID from the initial call response
+      console.log('📞 Patient selected, attempting to get initial call ID...');
     }
   }, [selectedPatient]);
+
+
 
   // Setup WebSocket handlers
   const setupSocketHandlers = () => {
@@ -81,6 +90,9 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
         setCallStatus('connected');
         message.success('Call connected successfully');
         setLoading(false);
+        
+        // Call connected successfully
+        console.log('📞 Call connected successfully');
       } else if (status === 'disconnected') {
         setCallStatus('failed');
         message.warning('Call disconnected');
@@ -95,23 +107,53 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
 
   // Handle socket messages
   const handleSocketMessage = (message) => {
+    // Cache busting comment - v1.1
     console.log('💬 Received chat message:', message);
     
     // Handle different message formats from WebSocket
     if (message.messageType === 'Message received') {
-      const chatMessage = {
-        id: Date.now() + Math.random(),
-        text: message.text,
-        sender: {
-          name: message.name === 'IVR' ? 'IVR System' : message.name === 'you' || message.name === 'Patient' ? 'You' : message.name || 'System'
-        },
-        timestamp: new Date().toISOString()
-      };
-      console.log('📝 Adding message to chat:', chatMessage);
-      setMessages(prev => [...prev, chatMessage]);
+      // Only add message if it has content
+      if (message.text && message.text.trim()) {
+        try {
+          const chatMessage = {
+            id: Date.now() + Math.random(),
+            text: message.text.trim(),
+            sender: {
+              name: message.name === 'IVR' ? 'IVR System' : message.name === 'you' ? 'EH BOT' : 'System'
+            },
+            timestamp: new Date().toISOString()
+          };
+          console.log('📝 Adding message to chat:', chatMessage);
+          console.log('🔍 Message sender:', chatMessage.sender.name, 'Is EH BOT:', chatMessage.sender.name === 'EH BOT');
+          setMessages(prev => [...prev, chatMessage]);
+          
+          // Voice is disabled, no speech needed
+          console.log('🔇 Voice disabled, skipping speech for:', chatMessage.sender.name);
+        } catch (error) {
+          console.error('❌ Error processing message:', error);
+        }
+      } else {
+        console.log('⚠️ Skipping empty message from:', message.name);
+      }
     } else if (message.type === 'chat') {
       // Handle standard chat format
-      setMessages(prev => [...prev, message]);
+      // Only add message if it has content
+      if (message.text && message.text.trim()) {
+        const processedMessage = {
+          ...message,
+          text: message.text.trim(),
+          sender: {
+            ...message.sender,
+            name: message.sender.name === 'IVR' ? 'IVR System' : message.sender.name === 'you' ? 'EH BOT' : message.sender.name
+          }
+        };
+        setMessages(prev => [...prev, processedMessage]);
+        
+        // Voice is disabled, no speech needed
+        console.log('🔇 Voice disabled, skipping speech for:', processedMessage.sender?.name || 'unknown');
+      } else {
+        console.log('⚠️ Skipping empty chat message from:', message.sender?.name);
+      }
     } else {
       // Handle other message types
       console.log('📨 Other message type:', message);
@@ -175,6 +217,10 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
     setChatCompletionStatus(selectedPatient?.chatCompleted || false);
   };
 
+
+
+    
+
   // Send message via WebSocket
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedPatient || !socketConnected) return;
@@ -191,7 +237,7 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
       const localMessage = {
         id: Date.now() + Math.random(),
         text: newMessage,
-        sender: { name: 'You' },
+        sender: { name: 'EH BOT' },
         timestamp: new Date().toISOString()
       };
       setMessages(prev => [...prev, localMessage]);
@@ -217,8 +263,8 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
 
   // Generate avatar based on sender name
   const generateAvatar = (sender) => {
-    if (sender.name === 'You' || sender.name === 'Patient' || sender.name === 'User') {
-      return <UserOutlined />;
+    if (sender.name === 'EH BOT') {
+      return <RobotOutlined />;
     } else if (sender.name === 'System' || sender.name === 'IVR System' || sender.name === 'Bot') {
       return <RobotOutlined />;
     } else {
@@ -244,7 +290,7 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
       position: 'relative'
     };
 
-    if (sender.name === 'You' || sender.name === 'Patient' || sender.name === 'User') {
+    if (sender.name === 'EH BOT') {
       return {
         ...baseStyle,
         backgroundColor: '#1890ff',
@@ -325,16 +371,9 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
             <Title level={4} className={styles.chatTitle}>
               Call with IVR
             </Title>
-            <Button
-              type="primary"
-              danger
-              size="large"
-              icon={<CloseOutlined />}
-              onClick={onClose}
-              className={styles.exitButton}
-            >
-              End Call
-            </Button>
+            <Space>
+              {/* End call functionality removed */}
+            </Space>
           </div>
         </div>
       }
@@ -358,11 +397,24 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
 
       {/* Messages Area */}
       <div className={`${styles.messagesArea} ${messages.length > 0 ? styles.hasMessages : ''}`}>
+        
         {loading ? (
           <div className={styles.loadingContainer}>
-            <Spin size="large" />
-            <br />
-            <Text type="secondary">Connecting to call...</Text>
+            <div className={styles.callConnecting}>
+              <div className={styles.callIcon}>
+                <PhoneOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
+              </div>
+              <div className={styles.connectingText}>
+                <Text strong style={{ fontSize: '18px', color: '#1890ff', marginBottom: '8px' }}>
+                  Connecting Call
+                </Text>
+                <div className={styles.connectingDots}>
+                  <span className={styles.dot}></span>
+                  <span className={styles.dot}></span>
+                  <span className={styles.dot}></span>
+                </div>
+              </div>
+            </div>
           </div>
         ) : messages.length === 0 ? (
           <div className={styles.emptyState}>
@@ -372,29 +424,58 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
           </div>
         ) : (
           <div>
-            {messages.map((msg) => (
-              <div key={msg.id} className={styles.messageContainer}>
-                <div className={styles.messageLayout}>
-                  <Avatar 
-                    icon={generateAvatar(msg.sender)}
-                    className={msg.sender.name === 'You' || msg.sender.name === 'Patient' || msg.sender.name === 'User' ? styles.userAvatar : styles.botAvatar}
-                  />
-                  <div className={styles.messageContent}>
-                    <div className={`${styles.messageBubble} ${msg.sender.name === 'You' || msg.sender.name === 'Patient' || msg.sender.name === 'User' ? styles.messageBubbleUser : styles.messageBubbleBot} ${msg.isError ? styles.messageBubbleError : ''}`}>
-                      <div style={{ marginBottom: '4px' }}>
-                        <Text strong style={{ fontSize: '12px', color: msg.sender.name === 'You' || msg.sender.name === 'Patient' || msg.sender.name === 'User' ? 'rgba(255,255,255,0.8)' : '#666' }}>
-                          {msg.sender.name}
-                        </Text>
-                      </div>
-                      {msg.text}
-                    </div>
-                    <Text type="secondary" className={styles.messageTimestamp}>
-                      {formatTime(msg.timestamp)}
-                    </Text>
+            {messages.map((msg) => {
+              console.log('🎨 Rendering message:', msg.sender.name, 'Is EH BOT:', msg.sender.name === 'EH BOT');
+              return (
+                <div key={msg.id} className={`${styles.messageContainer} ${msg.sender.name !== 'EH BOT' ? styles.botMessage : ''}`}>
+                  <div className={styles.messageLayout}>
+                    {msg.sender.name === 'EH BOT' ? (
+                      // EH BOT message - Avatar first, then message (right side)
+                      <>
+                        <Avatar 
+                          icon={generateAvatar(msg.sender)}
+                          className={styles.userAvatar}
+                        />
+                        <div className={styles.messageContent}>
+                          <div className={`${styles.messageBubble} ${styles.messageBubbleUser} ${msg.isError ? styles.messageBubbleError : ''}`}>
+                            <div style={{ marginBottom: '4px' }}>
+                              <Text strong style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)' }}>
+                                {msg.sender.name}
+                              </Text>
+                            </div>
+                            {msg.text}
+                          </div>
+                          <Text type="secondary" className={styles.messageTimestamp}>
+                            {formatTime(msg.timestamp)}
+                          </Text>
+                        </div>
+                      </>
+                    ) : (
+                      // IVR/System message - Avatar first, then message (left side)
+                      <>
+                        <Avatar 
+                          icon={generateAvatar(msg.sender)}
+                          className={styles.botAvatar}
+                        />
+                        <div className={styles.messageContent}>
+                          <div className={`${styles.messageBubble} ${styles.messageBubbleBot} ${msg.isError ? styles.messageBubbleError : ''}`}>
+                            <div style={{ marginBottom: '4px' }}>
+                              <Text strong style={{ fontSize: '12px', color: '#666' }}>
+                                {msg.sender.name}
+                              </Text>
+                            </div>
+                            {msg.text}
+                          </div>
+                          <Text type="secondary" className={styles.messageTimestamp}>
+                            {formatTime(msg.timestamp)}
+                          </Text>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             
             {isTyping && (
               <div className={styles.typingIndicator}>

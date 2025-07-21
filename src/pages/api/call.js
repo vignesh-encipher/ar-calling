@@ -4,7 +4,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const CALL_API_URL = 'https://4cf19c9fcc29.ngrok-free.app';
+    const CALL_API_URL = 'https://4ac1a7e5f33f.ngrok-free.app';
     
     const response = await fetch(`${CALL_API_URL}/call/connect`, {
       method: 'GET',
@@ -41,7 +41,6 @@ export default async function handler(req, res) {
       data: data
     });
   } catch (error) {
-    console.error('❌ Call API Error:', error);
     res.status(500).json({
       success: false,
       error: error.message

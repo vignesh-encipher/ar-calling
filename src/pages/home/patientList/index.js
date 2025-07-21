@@ -3,7 +3,7 @@ import { Input, Space, Card, Typography, Tag, Button, message, Row, Col } from '
 import { SearchOutlined, UserOutlined, MessageOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
-import ChatComponent from '../patientChat';
+
 import { apiService } from '../../../utils/network';
 import styles from './styles.module.css';
 import socketService from '../../../utils/network/socketService';
@@ -11,88 +11,38 @@ import socketService from '../../../utils/network/socketService';
 const { Search } = Input;
 const { Title, Text } = Typography;
 
-// Dummy patient data
+// Dummy patient data - Updated with new patients only
 
 const dummyPatients = [
   {
-  key: '1',
-  patientName: 'Wood, Robert',
-  npi: '1497194153',
-  ptan: '454852156',
-  tin: '312193',
-  medicareId: '7CQ1NF4JC21',
-  dos: '5/15/2025',
-  dob: '3/1/1946',
-  status: 'active',
-  chatCompleted: false
+    key: '1',
+    patientName: 'Washington, Harriet',
+    npi: '1497194153',
+    ptan: '312193',
+    tin: '454852156',
+    medicareId: '4WT7DF1KU57',
+    dos: '5/29/2025',
+    dob: '9/1/1941',
+    status: 'active',
+    chatCompleted: false
   },
   {
-  key: '2',
-  patientName: 'FINK, DIANE',
-  npi: '1497194153',
-  ptan: '454852156',
-  tin: '312193',
-  medicareId: '2JE9WC1MH00',
-  dos: '7/15/2025',
-  dob: '9/23/1958',
-  status: 'pending',
-  chatCompleted: true
-  },
-  {
-  key: '3',
-  patientName: 'Vincent, Linda',
-  npi: '1497194153',
-  ptan: '454852156',
-  tin: '312193',
-  medicareId: '6E46XJ0FM42',
-  dos: '7/15/2025',
-  dob: '3/10/1951',
-  status: 'active',
-  chatCompleted: false
-  },
-  {
-  key: '4',
-  patientName: 'Emily Davis',
-  npi: '1497194153',
-  ptan: '454852156',
-  tin: '312193',
-  medicareId: 'MED004567',
-  dos: '2024-01-18',
-  dob: '1985-11-08',
-  status: 'inactive',
-  chatCompleted: false
-  },
-  {
-  key: '5',
-  patientName: 'Suvarnasuddhi, Khanan',
-  npi: '1497194153',
-  ptan: '454852156',
-  tin: '312193',
-  medicareId: '3HW6QC3QK44',
-  dos: '7/15/2025',
-  dob: '6/15/1956',
-  status: 'active',
-  chatCompleted: false
-  },
-  {
-  key: '6',
-  patientName: 'Adise, Nancy',
-  npi: '1497194153',
-  ptan: '454852156',
-  tin: '312193',
-  medicareId: '3XJ8YG5QJ43',
-  dos: '15/5/2025',
-  dob: '6/8/1959',
-  status: 'pending',
-  chatCompleted: false
+    key: '2',
+    patientName: 'Ford, David',
+    npi: '1962841627',
+    ptan: '312193',
+    tin: '454852156',
+    medicareId: '4ME1KG4VJ20',
+    dos: '6/30/2025',
+    dob: '5/4/1962',
+    status: 'active',
+    chatCompleted: false
   }
-  ];
+];
 
-const PatientList = () => {
+const PatientList = ({ onPatientSelect, selectedPatient, chatCompletionStatus, onChatComplete }) => {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState(null);
-  const [chatCompletionStatus, setChatCompletionStatus] = useState({});
   const [callingPatientId, setCallingPatientId] = useState(null);
 
   // Load patients data from dummy data
@@ -107,13 +57,21 @@ const PatientList = () => {
         // Use dummy data instead of API call
         setPatients(dummyPatients);
         
-        const initialStatus = {};
-        dummyPatients.forEach(patient => {
-          if (patient && patient.key) {
-            initialStatus[patient.key] = patient.chatCompleted || false;
-          }
-        });
-        setChatCompletionStatus(initialStatus);
+        // Initialize chat completion status if not provided
+        if (!chatCompletionStatus || Object.keys(chatCompletionStatus).length === 0) {
+          const initialStatus = {};
+          dummyPatients.forEach(patient => {
+            if (patient && patient.key) {
+              initialStatus[patient.key] = patient.chatCompleted || false;
+            }
+          });
+          // Update parent component with initial status
+          dummyPatients.forEach(patient => {
+            if (patient && patient.key) {
+              onChatComplete(patient.key, patient.chatCompleted || false);
+            }
+          });
+        }
         
         console.log('✅ Loaded dummy patients:', dummyPatients.length);
         
@@ -226,7 +184,7 @@ const PatientList = () => {
       console.log('✅ Received callSid:', callSid);
       
       // Step 2: Set selected patient to trigger chat
-      setSelectedPatient(record);
+      onPatientSelect(record);
       
       // Step 3: Connect to WebSocket with callSid
       console.log('🔌 Attempting WebSocket connection with callSid:', callSid);
@@ -243,7 +201,7 @@ const PatientList = () => {
     } catch (error) {
       console.error('❌ Error starting call:', error);
       message.error(`Failed to start call: ${error.message}`);
-      setSelectedPatient(null);
+      onPatientSelect(null);
     } finally {
       setCallingPatientId(null);
     }
@@ -251,10 +209,7 @@ const PatientList = () => {
 
   // Handle chat completion
   const handleChatComplete = (patientId, isCompleted) => {
-    setChatCompletionStatus(prev => ({
-      ...prev,
-      [patientId]: isCompleted
-    }));
+    onChatComplete(patientId, isCompleted);
     
     setPatients(prev => prev.map(patient => 
       patient.key === patientId 
@@ -304,8 +259,13 @@ const PatientList = () => {
     <Card
       key={patient.key}
       size="small"
-      className={styles.patientCard}
-      bodyStyle={{ padding: '16px' }}
+      style={{ 
+        marginBottom: '8px',
+        border: selectedPatient?.key === patient.key ? '2px solid #1890ff' : '1px solid #e8e8e8',
+        borderRadius: '8px',
+        boxShadow: selectedPatient?.key === patient.key ? '0 2px 8px rgba(24,144,255,0.2)' : '0 1px 3px rgba(0,0,0,0.1)'
+      }}
+      bodyStyle={{ padding: '12px' }}
     >
       <div className={styles.patientInfoLayout}>
         <div className={styles.patientInfoContent}>
@@ -371,75 +331,62 @@ const PatientList = () => {
   );
 
   return (
-    <div className={styles.patientListContainer}>
-      <Row gutter={24}>
-        {/* Left Side - Patient List */}
-        <Col xs={24} lg={12}>
-          <Card 
-            title={
-              <div className={styles.patientListHeader}>
-                <Title level={4} className={styles.patientListTitle}>
-                  Patient List
-                </Title>
-              </div>
-            }
-            className={styles.patientListCard}
-            headStyle={{ padding: 0, border: 'none' }}
-            bodyStyle={{ padding: '24px' }}
-          >
-            <Space direction="vertical" style={{ width: '100%' }} size="middle">
-              {/* Patient Cards Container */}
-              <div className={styles.patientCardsContainer}>
-                {loading ? (
-                  <div style={{ textAlign: 'center', padding: '40px' }}>
-                    <div className="ant-spin ant-spin-lg ant-spin-spinning">
-                      <span className="ant-spin-dot ant-spin-dot-spin">
-                        <i className="ant-spin-dot-item"></i>
-                        <i className="ant-spin-dot-item"></i>
-                        <i className="ant-spin-dot-item"></i>
-                        <i className="ant-spin-dot-item"></i>
-                      </span>
-                    </div>
-                    <br />
-                    <Text type="secondary">Loading patients...</Text>
-                  </div>
-                ) : patients.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '40px' }}>
-                    <div style={{ marginBottom: '16px' }}>
-                      <UserOutlined style={{ fontSize: '48px', color: '#d9d9d9' }} />
-                    </div>
-                    <Text type="secondary" style={{ fontSize: '16px', display: 'block', marginBottom: '8px' }}>
-                      No patients available.
-                    </Text>
-                    <Text type="secondary" style={{ fontSize: '14px', display: 'block', marginBottom: '16px' }}>
-                      Please check your connection or try again later.
-                    </Text>
-                    <Button 
-                      type="primary" 
-                      onClick={handleRetry}
-                      icon={<SearchOutlined />}
-                      loading={loading}
-                    >
-                      Retry
-                    </Button>
-                  </div>
-                ) : (
-                  (patients || []).filter(patient => patient && patient.key).map(renderPatientCard)
-                )}
-              </div>
-            </Space>
-          </Card>
-        </Col>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <div style={{ 
+        padding: '16px 24px', 
+        borderBottom: '1px solid #e8e8e8',
+        backgroundColor: '#fafafa'
+      }}>
+        <Title level={4} style={{ margin: 0, color: '#04306f' }}>
+          Patient List ({patients.length} patients)
+        </Title>
+        <Text type="secondary" style={{ fontSize: '12px' }}>
+          Click "Call" to start chatting with a patient
+        </Text>
+      </div>
 
-        {/* Right Side - Chat Component */}
-        <Col xs={24} lg={12}>
-          <ChatComponent 
-            selectedPatient={selectedPatient}
-            onChatComplete={handleChatComplete}
-            onClose={() => setSelectedPatient(null)}
-          />
-        </Col>
-      </Row>
+      {/* Patient List Content */}
+      <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <div className="ant-spin ant-spin-lg ant-spin-spinning">
+              <span className="ant-spin-dot ant-spin-dot-spin">
+                <i className="ant-spin-dot-item"></i>
+                <i className="ant-spin-dot-item"></i>
+                <i className="ant-spin-dot-item"></i>
+                <i className="ant-spin-dot-item"></i>
+              </span>
+            </div>
+            <br />
+            <Text type="secondary">Loading patients...</Text>
+          </div>
+        ) : patients.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <div style={{ marginBottom: '16px' }}>
+              <UserOutlined style={{ fontSize: '48px', color: '#d9d9d9' }} />
+            </div>
+            <Text type="secondary" style={{ fontSize: '16px', display: 'block', marginBottom: '8px' }}>
+              No patients available.
+            </Text>
+            <Text type="secondary" style={{ fontSize: '14px', display: 'block', marginBottom: '16px' }}>
+              Please check your connection or try again later.
+            </Text>
+            <Button 
+              type="primary" 
+              onClick={handleRetry}
+              icon={<SearchOutlined />}
+              loading={loading}
+            >
+              Retry
+            </Button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {(patients || []).filter(patient => patient && patient.key).map(renderPatientCard)}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

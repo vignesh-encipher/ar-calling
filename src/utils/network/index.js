@@ -2,7 +2,7 @@ import { checkStatus } from "./helper";
 import { portalUrl, tokenKey } from "../config";
 import { getStorage } from "../storages";
 
-const CALL_API_URL = `https://4cf19c9fcc29.ngrok-free.app`;
+const CALL_API_URL = `https://44380e6a9792.ngrok-free.app`; // Updated to match current ngrok URL
 
 export async function requestPortal(url, options) {
   const token = await getStorage(tokenKey);
@@ -92,5 +92,36 @@ export const apiService = {
         message: 'Mock call connected successfully'
       }
     };
+  },
+
+  // End call API
+  async endCall(callId) {
+    try {
+      console.log('📞 Ending call with ID:', callId);
+      
+      // Use local API route to avoid CORS issues
+      const response = await fetch(`/api/call/end?callId=${callId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Call-ID': callId
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ Call End Response:', data);
+      
+      return data;
+    } catch (error) {
+      console.error('❌ Call End Error:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
   }
 };
