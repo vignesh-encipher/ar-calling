@@ -157,6 +157,12 @@ const PatientList = () => {
       return;
     }
     
+    // Prevent multiple simultaneous calls
+    if (callingPatientId) {
+      console.log('⚠️ Call already in progress, ignoring click');
+      return;
+    }
+    
     setCallingPatientId(record.key);
     
     try {
@@ -177,27 +183,44 @@ const PatientList = () => {
       console.log('🔍 Response data:', callResponse.data);
       console.log('🔍 Response data type:', typeof callResponse.data);
       
-      // Handle different response formats
-      let callSid;
+      // Extract callSid from response
+      let callSid = null;
       
-      if (typeof callResponse.data === 'string') {
+      console.log('🔍 Full response structure:', JSON.stringify(callResponse, null, 2));
+      console.log('🔍 callResponse.data type:', typeof callResponse.data);
+      console.log('🔍 callResponse.data:', callResponse.data);
+      
+      // Check if data exists and has callSid
+      if (callResponse.data && typeof callResponse.data === 'object' && callResponse.data.callSid) {
+        callSid = callResponse.data.callSid;
+        console.log('✅ Found callSid directly:', callSid);
+      } else if (typeof callResponse.data === 'string') {
         // API returns callSid directly as a string
         callSid = callResponse.data;
-        console.log('✅ Found callSid as direct string:', callSid);
-      } else if (typeof callResponse.data === 'object' && callResponse.data !== null) {
-        // API returns an object, try to find callSid in various fields
-        console.log('🔍 Response data keys:', Object.keys(callResponse.data));
-        callSid = callResponse.data?.callSid || 
-                 callResponse.data?.id || 
-                 callResponse.data?.call_id || 
-                 callResponse.data?.callId || 
-                 callResponse.data?.sid ||
-                 callResponse.data?.CallSid;
+        console.log('✅ Found callSid as string:', callSid);
+      } else if (callResponse.data && typeof callResponse.data === 'object') {
+        // Try alternative field names
+        console.log('🔍 Available keys in data:', Object.keys(callResponse.data));
+        callSid = callResponse.data.id || 
+                 callResponse.data.call_id || 
+                 callResponse.data.callId || 
+                 callResponse.data.sid ||
+                 callResponse.data.CallSid;
+        console.log('✅ Found callSid from alternative fields:', callSid);
       }
       
       if (!callSid) {
-        console.error('❌ No callSid found in response. Response:', callResponse.data);
-        throw new Error(`No callSid received from call API. Response: ${JSON.stringify(callResponse.data)}`);
+        console.error('❌ No callSid found in response. Full response:', JSON.stringify(callResponse, null, 2));
+        
+        // Last resort: try to find callSid anywhere in the response
+        const responseString = JSON.stringify(callResponse);
+        const callSidMatch = responseString.match(/"callSid"\s*:\s*"([^"]+)"/);
+        if (callSidMatch) {
+          callSid = callSidMatch[1];
+          console.log('✅ Found callSid using regex fallback:', callSid);
+        } else {
+          throw new Error(`No callSid received from call API. Response: ${JSON.stringify(callResponse.data)}`);
+        }
       }
       
       console.log('✅ Received callSid:', callSid);
@@ -206,7 +229,14 @@ const PatientList = () => {
       setSelectedPatient(record);
       
       // Step 3: Connect to WebSocket with callSid
-      await socketService.connect(callSid);
+      console.log('🔌 Attempting WebSocket connection with callSid:', callSid);
+      try {
+        await socketService.connect(callSid);
+        console.log('✅ WebSocket connection successful');
+      } catch (socketError) {
+        console.error('❌ WebSocket connection failed:', socketError);
+        throw socketError;
+      }
       
       message.success(`Call connected with ${record.patientName} (Call ID: ${callSid})`);
       

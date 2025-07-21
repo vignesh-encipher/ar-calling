@@ -38,7 +38,7 @@ export const apiService = {
       console.log('📞 Connecting to call API...');
       
       // Use local API route to avoid CORS issues
-      const response = await fetch('/api/call/connect', {
+      const response = await fetch('/api/call', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -49,10 +49,28 @@ export const apiService = {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      const data = await response.json();
+      // Check if response is JSON or plain text
+      const contentType = response.headers.get('content-type');
+      let data;
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        // Handle plain text response
+        const textData = await response.text();
+        data = {
+          callId: textData,
+          message: 'Call connected successfully',
+          timestamp: new Date().toISOString()
+        };
+      }
+      
       console.log('✅ Call API Response:', data);
       
-      return data; // Return the response directly since it's already formatted
+      return {
+        success: true,
+        data: data
+      };
     } catch (error) {
       console.error('❌ Call API Error:', error);
       

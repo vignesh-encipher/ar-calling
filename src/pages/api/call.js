@@ -29,7 +29,8 @@ export default async function handler(req, res) {
       // Handle plain text response
       const textData = await response.text();
       data = {
-        callId: textData,
+        callSid: textData, // Changed from callId to callSid
+        callId: textData,  // Keep callId for backward compatibility
         message: 'Call connected successfully',
         timestamp: new Date().toISOString()
       };
