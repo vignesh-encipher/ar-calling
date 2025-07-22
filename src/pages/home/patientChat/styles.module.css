@@ -290,9 +290,11 @@
 .messageContainer:not(.botMessage) .messageLayout {
   flex-direction: row;
   justify-content: flex-end;
-  gap: 0;
-  align-items: flex-end;
+  gap: 0px;
+  align-items: flex-start;
   position: relative;
+  max-width: 80%;
+  width: 100%;
 }
 
 /* For IVR/System messages (left side) */
@@ -320,6 +322,8 @@
   margin-right: 0;
   padding-left: 0;
   padding-right: 0;
+  flex: 1;
+  min-width: 0;
 }
 
 /* For IVR/System messages (left side) */
@@ -355,6 +359,32 @@
   margin-left: 0;
   margin-right: 40px;
   padding-right: 40px;
+  background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
+  color: white;
+  border: 1px solid #52c41a;
+  box-shadow: 0 4px 16px rgba(82, 196, 26, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+/* EH BOT message bubble hover effect */
+.messageContainer:not(.botMessage) .messageBubbleUser:hover {
+  box-shadow: 0 6px 20px rgba(82, 196, 26, 0.35);
+  transform: translateY(-1px);
+  transition: all 0.3s ease;
+}
+
+/* EH BOT message bubble with subtle pattern */
+.messageContainer:not(.botMessage) .messageBubbleUser::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 20px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  transform: translate(10px, -10px);
 }
 
 .messageBubbleBot {
@@ -389,14 +419,26 @@
 
 /* EH BOT specific avatar styling */
 .messageContainer:not(.botMessage) .userAvatar {
-  margin-right: 0;
-  margin-left: 0;
-  margin-bottom: 0;
-  margin-top: 0;
-  position: absolute;
-  right: 0;
-  top: 0;
-  z-index: 10;
+  margin: 0;
+  margin-left: 0px;
+  position: relative;
+  background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%) !important;
+  color: white !important;
+  border: 3px solid white;
+  box-shadow: 0 4px 12px rgba(82, 196, 26, 0.3);
+  transition: all 0.3s ease;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* EH BOT avatar hover effect */
+.messageContainer:not(.botMessage) .userAvatar:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(82, 196, 26, 0.4);
 }
 
 .botAvatar {
@@ -658,6 +700,96 @@
 
 .typingIndicator:last-child {
   margin-bottom: 0;
+}
+
+/* Enhanced EH BOT message styling */
+.messageContainer:not(.botMessage) .messageBubble {
+  background: #ffffff !important;
+  color: #333333 !important;
+  border: 1px solid #e8e8e8 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.2px !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  position: relative !important;
+  overflow: hidden !important;
+  transition: all 0.3s ease !important;
+  margin-right: 0px !important;
+}
+
+/* EH BOT message hover effect */
+.messageContainer:not(.botMessage) .messageBubble:hover {
+  box-shadow: 0 6px 20px rgba(82, 196, 26, 0.35) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* EH BOT message with subtle pattern */
+.messageContainer:not(.botMessage) .messageBubble::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 20px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  transform: translate(10px, -10px);
+}
+
+/* Enhanced EH BOT avatar styling */
+.messageContainer:not(.botMessage) .userAvatar {
+  background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%) !important;
+  color: white !important;
+  border: 3px solid white !important;
+  box-shadow: 0 4px 12px rgba(82, 196, 26, 0.3) !important;
+  transition: all 0.3s ease !important;
+  width: 40px !important;
+  height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+
+/* EH BOT avatar hover effect */
+.messageContainer:not(.botMessage) .userAvatar:hover {
+  transform: scale(1.1) !important;
+  box-shadow: 0 6px 16px rgba(82, 196, 26, 0.4) !important;
+}
+
+/* Enhanced IVR SYSTEM message styling */
+.messageContainer.botMessage .messageBubble {
+  background: #ffffff !important;
+  color: #333333 !important;
+  border: 1px solid #e8e8e8 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.2px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  transition: all 0.3s ease !important;
+}
+
+/* IVR SYSTEM message hover effect */
+.messageContainer.botMessage .messageBubble:hover {
+  box-shadow: 0 6px 20px rgba(24, 144, 255, 0.35) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Enhanced bot avatar styling */
+.messageContainer.botMessage .botAvatar {
+  background: linear-gradient(135deg, #1890ff 0%, #40a9ff 100%) !important;
+  color: white !important;
+  border: 3px solid white !important;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+/* Bot avatar hover effect */
+.messageContainer.botMessage .botAvatar:hover {
+  transform: scale(1.1) !important;
+  box-shadow: 0 6px 16px rgba(24, 144, 255, 0.4) !important;
 }
 
 /* Responsive Design */
