@@ -1,12 +1,14 @@
+import { API_ENDPOINTS } from '../../utils/config';
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
   try {
-    const CALL_API_URL = 'https://26543899bee7.ngrok-free.app';
+    const CALL_API_URL = API_ENDPOINTS.CALL_CONNECT.replace('/call/connect', '');
     
-    const response = await fetch(`${CALL_API_URL}/call/connect`, {
+    const response = await fetch(API_ENDPOINTS.CALL_CONNECT, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

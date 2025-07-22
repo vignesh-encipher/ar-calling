@@ -1,3 +1,5 @@
+import { API_ENDPOINTS } from '../../../utils/config';
+
 export default async function handler(req, res) {
   console.log('📞 End call API endpoint hit');
   console.log('📞 Method:', req.method);
@@ -33,10 +35,10 @@ export default async function handler(req, res) {
       });
     }
 
-    const CALL_API_URL = 'https://26543899bee7.ngrok-free.app';
-    console.log('📞 Calling external API:', `${CALL_API_URL}/call/end?callId=${callId}`);
+    const CALL_API_URL = API_ENDPOINTS.CALL_END.replace('/call/end', '');
+    console.log('📞 Calling external API:', `${API_ENDPOINTS.CALL_END}?callId=${callId}`);
     
-    const response = await fetch(`${CALL_API_URL}/call/end?callId=${callId}`, {
+    const response = await fetch(`${API_ENDPOINTS.CALL_END}?callId=${callId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

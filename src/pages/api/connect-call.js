@@ -1,3 +1,5 @@
+import { API_ENDPOINTS } from '../../utils/config';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
@@ -12,7 +14,7 @@ export default async function handler(req, res) {
 
     console.log('🔄 Connecting call for patient ID:', patientId);
     
-    const apiUrl = `https://26543899bee7.ngrok-free.app/ar/connect?patientId=${patientId}`;
+    const apiUrl = `${API_ENDPOINTS.CONNECT_CALL}?patientId=${patientId}`;
     console.log('🌐 Calling API URL:', apiUrl);
     
     const response = await fetch(apiUrl, {

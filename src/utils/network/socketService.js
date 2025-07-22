@@ -1,3 +1,5 @@
+import { API_ENDPOINTS } from '../config';
+
 class SocketService {
   constructor() {
     this.socket = null;
@@ -20,7 +22,7 @@ class SocketService {
     return new Promise((resolve, reject) => {
       try {
         // Use real socket API with call ID
-        const wsUrl = `wss://26543899bee7.ngrok-free.app/ws?callSid=${callSid}`;
+        const wsUrl = `${API_ENDPOINTS.WEBSOCKET}?callSid=${callSid}`;
         console.log('🔌 Connecting to real WebSocket:', wsUrl);
         
         this.callSid = callSid;

@@ -1,3 +1,5 @@
+import { API_ENDPOINTS } from '../../utils/config';
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
@@ -6,7 +8,7 @@ export default async function handler(req, res) {
   try {
     console.log('🔄 Proxying request to external API...');
     
-    const response = await fetch('https://26543899bee7.ngrok-free.app/ar/get/allPatients', {
+    const response = await fetch(API_ENDPOINTS.GET_ALL_PATIENTS, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

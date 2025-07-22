@@ -1,8 +1,9 @@
 import { checkStatus } from "./helper";
 import { portalUrl, tokenKey } from "../config";
 import { getStorage } from "../storages";
+import { API_BASE_URL } from "../config";
 
-const CALL_API_URL = `https://26543899bee7.ngrok-free.app`; // Updated to match current ngrok URL
+const CALL_API_URL = API_BASE_URL; // Use centralized API configuration
 
 export async function requestPortal(url, options) {
   const token = await getStorage(tokenKey);

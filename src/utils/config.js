@@ -9,13 +9,32 @@ export const portalPdfUrl = process.env.NEXT_PUBLIC_PDF_PORTAL_BASE_URL;
 export const pdfControl = process.env.NEXT_PUBLIC_PORTAL_BASE_URL + "manual-coding-db-service/file/getfile/bytes";
 export const buildIdGen = process.env.NEXT_PUBLIC_BUILD_ID;
 
+// ===== CENTRALIZED API CONFIGURATION =====
+// Change this single domain to update all API endpoints
+const API_DOMAIN = '09db797aeeea.ngrok-free.app';
+
+// API Base URLs
+export const API_BASE_URL = `https://${API_DOMAIN}`;
+export const SOCKET_BASE_URL = `wss://${API_DOMAIN}`;
+
+// API Endpoints
+export const API_ENDPOINTS = {
+  // Patient endpoints
+  GET_ALL_PATIENTS: `${API_BASE_URL}/ar/get/allPatients`,
+  
+  // Call endpoints
+  CONNECT_CALL: `${API_BASE_URL}/ar/connect`,
+  CALL_CONNECT: `${API_BASE_URL}/call/connect`,
+  CALL_END: `${API_BASE_URL}/call/end`,
+  
+  // WebSocket endpoints
+  WEBSOCKET: `${SOCKET_BASE_URL}/ws`,
+};
+
 // API Configuration
 export const USE_MOCK_SERVICES = false; // Set to false for real services
 export const MOCK_DELAY = 1000; // Delay for mock responses in milliseconds
 export const FORCE_MOCK_MODE = false; // Set to false for real API calls
-
-// Socket Configuration
-export const SOCKET_BASE_URL = 'wss://26543899bee7.ngrok-free.app'; // Real socket URL
 
 // Mock data configuration
 export const MOCK_CONFIG = {
