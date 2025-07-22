@@ -20,10 +20,12 @@ import {
   CheckCircleOutlined, 
   ClockCircleOutlined, 
   ExclamationCircleOutlined, 
-  PhoneOutlined 
+  PhoneOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { MOCK_CONFIG } from '../../../utils/config';
 import socketService from '../../../utils/network/socketService';
+import mockApiService from '../../../utils/network/mockApiService';
 import { apiService } from '../../../utils/network';
 import styles from './styles.module.css';
 
@@ -31,6 +33,9 @@ const { TextArea } = Input;
 const { Text, Title } = Typography;
 
 const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
+  // Use real socket service for real-time communication
+  const activeService = socketService;
+  
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -38,7 +43,27 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [socketConnected, setSocketConnected] = useState(false);
   const [callStatus, setCallStatus] = useState('idle'); // idle, connecting, connected, failed
-  const [voiceEnabled, setVoiceEnabled] = useState(false); // Voice/speech toggle - disabled by default
+  const [voiceEnabled, setVoiceEnabled] = useState(true); // Voice/speech toggle - enabled by default
+  const [isInitialized, setIsInitialized] = useState(false); // Track if socket is already initialized
+  
+  // Debug voice state and check speech synthesis
+  useEffect(() => {
+    console.log('🔊 Voice enabled state:', voiceEnabled);
+    
+    // Check if speech synthesis is available
+    if ('speechSynthesis' in window && window.speechSynthesis) {
+      console.log('🔊 Speech synthesis is available');
+      const voices = window.speechSynthesis.getVoices();
+      console.log('🔊 Available voices:', voices.length);
+      voices.forEach(voice => {
+        console.log(`🔊 Voice: ${voice.name} (${voice.lang})`);
+      });
+    } else {
+      console.warn('🔊 Speech synthesis not available');
+    }
+  }, [voiceEnabled]);
+  const [isListening, setIsListening] = useState(false); // Speech recognition state
+  const [speechRecognition, setSpeechRecognition] = useState(null); // Speech recognition instance
 
   const messagesEndRef = useRef(null);
   const [chatHistory, setChatHistory] = useState([]);
@@ -58,33 +83,57 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
 
   // Load chat history when patient is selected
   useEffect(() => {
-    if (selectedPatient) {
-      loadChatHistory(selectedPatient.key);
-      checkChatCompletionStatus(selectedPatient.key);
-      setupSocketHandlers();
-      
-      // Try to get call ID from the initial call response
-      console.log('📞 Patient selected, attempting to get initial call ID...');
-    }
-  }, [selectedPatient]);
+    const connectToSocket = async () => {
+      if (selectedPatient && !isInitialized) {
+        loadChatHistory(selectedPatient.key);
+        checkChatCompletionStatus(selectedPatient.key);
+        setupSocketHandlers();
+        
+        // Check if socket is already connected from patientList
+        const connectionStatus = socketService.getConnectionStatus();
+        if (connectionStatus === 'connected') {
+          console.log('📞 Patient selected, socket already connected');
+          setSocketConnected(true);
+          setCallStatus('connected');
+        } else {
+          console.log('📞 Patient selected, waiting for socket connection...');
+          setCallStatus('connecting');
+        }
+        
+        setIsInitialized(true);
+        setLoading(false);
+      }
+    };
+
+    connectToSocket();
+  }, [selectedPatient, isInitialized]);
 
 
 
   // Setup WebSocket handlers
   const setupSocketHandlers = () => {
+    // Clear existing handlers first to prevent duplicates
+    activeService.offMessage('chat');
+    activeService.offMessage('typing');
+    activeService.offMessage('history');
+    activeService.offMessage('system');
+    activeService.offMessage('call_status');
+    activeService.offMessage('Message received');
+    activeService.offMessage('Typing');
+    
     // Register message handlers for different message types
-    socketService.onMessage('chat', handleSocketMessage);
-    socketService.onMessage('typing', handleTypingMessage);
-    socketService.onMessage('history', handleHistoryMessage);
-    socketService.onMessage('system', handleSystemMessage);
-    socketService.onMessage('call_status', handleCallStatusMessage);
+    activeService.onMessage('chat', handleSocketMessage);
+    activeService.onMessage('typing', handleTypingMessage);
+    activeService.onMessage('history', handleHistoryMessage);
+    activeService.onMessage('system', handleSystemMessage);
+    activeService.onMessage('call_status', handleCallStatusMessage);
     
     // Also handle raw WebSocket messages (for messageType format)
-    socketService.onMessage('Message received', handleSocketMessage);
-    socketService.onMessage('Typing', handleTypingMessage);
+    activeService.onMessage('Message received', handleSocketMessage);
+    activeService.onMessage('Typing', handleTypingMessage);
     
     // Register connection handler
-    socketService.onConnection((status) => {
+    activeService.onConnection((status) => {
       setSocketConnected(status === 'connected');
       if (status === 'connected') {
         setCallStatus('connected');
@@ -107,8 +156,19 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
 
   // Handle socket messages
   const handleSocketMessage = (message) => {
-    // Cache busting comment - v1.1
     console.log('💬 Received chat message:', message);
+    
+    // Prevent duplicate processing by checking if message already exists
+    const messageId = message.id || `${message.name || message.sender?.name}-${message.text}`;
+    const existingMessage = messages.find(msg => 
+      msg.text === message.text && 
+      msg.sender.name === (message.name || message.sender?.name)
+    );
+    
+    if (existingMessage) {
+      console.log('⚠️ Duplicate message detected, skipping:', message.text);
+      return;
+    }
     
     // Handle different message formats from WebSocket
     if (message.messageType === 'Message received') {
@@ -116,19 +176,24 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
       if (message.text && message.text.trim()) {
         try {
           const chatMessage = {
-            id: Date.now() + Math.random(),
+            id: messageId,
             text: message.text.trim(),
             sender: {
-              name: message.name === 'IVR' ? 'IVR System' : message.name === 'you' ? 'EH BOT' : 'System'
+              name: message.name // Backend sends "you" but we'll display as "EH BOT" in UI
             },
             timestamp: new Date().toISOString()
           };
-          console.log('📝 Adding message to chat:', chatMessage);
-          console.log('🔍 Message sender:', chatMessage.sender.name, 'Is EH BOT:', chatMessage.sender.name === 'EH BOT');
-          setMessages(prev => [...prev, chatMessage]);
+          console.log('📝 Processing message:', chatMessage);
+          console.log('🔍 Message sender:', chatMessage.sender.name);
           
-          // Voice is disabled, no speech needed
-          console.log('🔇 Voice disabled, skipping speech for:', chatMessage.sender.name);
+          // For ALL bot messages (IVR, IVR SYSTEM and "you" from backend), add to display queue and speak
+          if (chatMessage.sender.name === 'you' || chatMessage.sender.name === 'IVR SYSTEM' || chatMessage.sender.name === 'IVR') {
+            console.log('🔊 Adding bot message to voice queue:', chatMessage.sender.name);
+            addMessageToDisplayQueue(chatMessage);
+          } else {
+            // For non-bot messages, display immediately
+            setMessages(prev => [...prev, chatMessage]);
+          }
         } catch (error) {
           console.error('❌ Error processing message:', error);
         }
@@ -137,20 +202,24 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
       }
     } else if (message.type === 'chat') {
       // Handle standard chat format
-      // Only add message if it has content
       if (message.text && message.text.trim()) {
         const processedMessage = {
           ...message,
+          id: messageId,
           text: message.text.trim(),
           sender: {
             ...message.sender,
-            name: message.sender.name === 'IVR' ? 'IVR System' : message.sender.name === 'you' ? 'EH BOT' : message.sender.name
+            name: message.sender.name
           }
         };
-        setMessages(prev => [...prev, processedMessage]);
         
-        // Voice is disabled, no speech needed
-        console.log('🔇 Voice disabled, skipping speech for:', processedMessage.sender?.name || 'unknown');
+        // For ALL bot messages, add to voice queue
+        if (processedMessage.sender.name === 'you' || processedMessage.sender.name === 'IVR SYSTEM' || processedMessage.sender.name === 'IVR') {
+          console.log('🔊 Adding bot message to voice queue:', processedMessage.sender.name);
+          addMessageToDisplayQueue(processedMessage);
+        } else {
+          setMessages(prev => [...prev, processedMessage]);
+        }
       } else {
         console.log('⚠️ Skipping empty chat message from:', message.sender?.name);
       }
@@ -223,7 +292,10 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
 
   // Send message via WebSocket
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedPatient || !socketConnected) return;
+    if (!newMessage.trim() || !selectedPatient) return;
+    
+    // Allow sending if socket is connected (real or mock)
+    if (!socketConnected && !MOCK_CONFIG.enableMockSocket) return;
     
     // Send in the format expected by the WebSocket
     const wsMessageData = {
@@ -232,12 +304,12 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
       name: 'Patient'
     };
     
-    if (socketService.sendMessage(wsMessageData)) {
+    if (activeService.sendMessage(wsMessageData)) {
       // Also add the message to local state immediately for better UX
       const localMessage = {
         id: Date.now() + Math.random(),
         text: newMessage,
-        sender: { name: 'EH BOT' },
+        sender: { name: 'You' },
         timestamp: new Date().toISOString()
       };
       setMessages(prev => [...prev, localMessage]);
@@ -265,7 +337,10 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
   const generateAvatar = (sender) => {
     if (sender.name === 'EH BOT') {
       return <RobotOutlined />;
-    } else if (sender.name === 'System' || sender.name === 'IVR System' || sender.name === 'Bot') {
+    } else if (sender.name === 'IVR SYSTEM' || sender.name === 'IVR') {
+      return <PhoneOutlined />;
+    } else if (sender.name === 'you') {
+      // "you" from backend = "EH BOT" in UI
       return <RobotOutlined />;
     } else {
       // Generate initials from name for other senders
@@ -290,15 +365,42 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
       position: 'relative'
     };
 
-    if (sender.name === 'EH BOT') {
+    // Backend sends "you" but we treat it as "EH BOT" for positioning
+    if (sender.name === 'you') {
+      // "you" from backend = "EH BOT" in UI (right side)
       return {
         ...baseStyle,
-        backgroundColor: '#1890ff',
-        color: 'white',
+        backgroundColor: isError ? '#ff4d4f' : '#f6ffed',
+        color: isError ? 'white' : '#389e0d',
         marginLeft: 'auto',
-        borderBottomRightRadius: '4px'
+        borderBottomRightRadius: '4px',
+        border: '1px solid #b7eb8f',
+        boxShadow: '0 2px 8px rgba(82, 196, 26, 0.15)'
+      };
+    } else if (sender.name === 'EH BOT') {
+      // EH BOT on the RIGHT side (opposite of IVR SYSTEM)
+      return {
+        ...baseStyle,
+        backgroundColor: isError ? '#ff4d4f' : '#f6ffed',
+        color: isError ? 'white' : '#389e0d',
+        marginLeft: 'auto',
+        borderBottomRightRadius: '4px',
+        border: '1px solid #b7eb8f',
+        boxShadow: '0 2px 8px rgba(82, 196, 26, 0.15)'
+      };
+    } else if (sender.name === 'IVR SYSTEM' || sender.name === 'IVR') {
+      // IVR SYSTEM on the LEFT side (backend sends "IVR", display as "IVR SYSTEM")
+      return {
+        ...baseStyle,
+        backgroundColor: isError ? '#ff4d4f' : '#e6f7ff',
+        color: isError ? 'white' : '#0050b3',
+        marginRight: 'auto',
+        borderBottomLeftRadius: '4px',
+        border: '1px solid #91d5ff',
+        boxShadow: '0 2px 8px rgba(24, 144, 255, 0.15)'
       };
     } else {
+      // Other system messages use left side
       return {
         ...baseStyle,
         backgroundColor: isError ? '#ff4d4f' : '#f0f0f0',
@@ -309,12 +411,270 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
     }
   };
 
+  // Initialize speech recognition
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+      
+      recognition.onstart = () => {
+        setIsListening(true);
+        console.log('🎤 Speech recognition started');
+      };
+      
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        console.log('🎤 Speech recognized:', transcript);
+        setNewMessage(transcript);
+        setIsListening(false);
+        
+        // Auto-send the message after speech recognition
+        setTimeout(() => {
+          sendMessage();
+        }, 500);
+      };
+      
+      recognition.onerror = (event) => {
+        console.error('🎤 Speech recognition error:', event.error);
+        setIsListening(false);
+        message.error('Speech recognition failed');
+      };
+      
+      recognition.onend = () => {
+        setIsListening(false);
+        console.log('🎤 Speech recognition ended');
+      };
+      
+      setSpeechRecognition(recognition);
+    } else {
+      console.warn('🎤 Speech recognition not supported');
+    }
+  }, []);
+
+  // Voice and display queue system - wait for current speech to complete
+  const voiceQueue = useRef([]);
+  const displayQueue = useRef([]);
+  const isSpeaking = useRef(false);
+  const spokenMessages = useRef(new Set());
+
+  // Add message to display queue and start speech
+  const addMessageToDisplayQueue = (chatMessage) => {
+    console.log(`🔊 Adding message to voice queue: ${chatMessage.sender.name} - "${chatMessage.text}"`);
+    console.log(`🔊 Voice enabled: ${voiceEnabled}`);
+    
+    // Add to display queue
+    displayQueue.current.push(chatMessage);
+    
+    // Add to voice queue only if voice is enabled
+    if (voiceEnabled) {
+      voiceQueue.current.push({ 
+        text: chatMessage.text, 
+        sender: chatMessage.sender.name,
+        messageId: chatMessage.id 
+      });
+      
+      console.log(`🔊 Voice queue length: ${voiceQueue.current.length}`);
+      console.log(`🔊 Display queue length: ${displayQueue.current.length}`);
+      
+      // Start processing if not currently speaking
+      if (!isSpeaking.current) {
+        console.log('🔊 Starting voice queue processing...');
+        processVoiceQueue();
+      } else {
+        console.log('🔊 Voice queue processing already in progress...');
+      }
+    } else {
+      // If voice is disabled, just display the message immediately
+      console.log('🔊 Voice disabled, displaying message immediately');
+      setMessages(prev => [...prev, chatMessage]);
+    }
+  };
+
+  // Process voice queue and display messages
+  const processVoiceQueue = () => {
+    if (voiceQueue.current.length === 0 || isSpeaking.current) {
+      return;
+    }
+
+    const { text, sender, messageId } = voiceQueue.current.shift();
+    isSpeaking.current = true;
+
+    // Display the message now
+    const messageToDisplay = displayQueue.current.shift();
+    if (messageToDisplay) {
+      setMessages(prev => [...prev, messageToDisplay]);
+      console.log(`📝 Displayed message: ${sender}`);
+    }
+
+    if ('speechSynthesis' in window && window.speechSynthesis) {
+      console.log('🔊 Speech synthesis available, creating utterance...');
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.9; // Slightly slower for clarity
+      utterance.pitch = 1.0;
+      utterance.volume = 0.8;
+      
+      // Use different voices for different senders
+      const voices = window.speechSynthesis.getVoices();
+      let selectedVoice = null;
+      
+      if (sender === 'EH BOT' || sender === 'you') {
+        // Try to use a female voice for EH BOT ("you" from backend)
+        selectedVoice = voices.find(voice => 
+          voice.name.includes('Female') || 
+          voice.name.includes('Samantha') || 
+          voice.name.includes('Victoria')
+        );
+      } else if (sender === 'IVR SYSTEM' || sender === 'IVR') {
+        // Try to use a male voice for IVR SYSTEM (backend sends "IVR")
+        selectedVoice = voices.find(voice => 
+          voice.name.includes('Male') || 
+          voice.name.includes('Alex') || 
+          voice.name.includes('David')
+        );
+      }
+      
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
+      }
+      
+      utterance.onstart = () => {
+        console.log(`🔊 Speaking (${sender}):`, text);
+      };
+      
+      utterance.onend = () => {
+        console.log(`🔊 Finished speaking (${sender})`);
+        isSpeaking.current = false;
+        // Process next message in queue after a short delay
+        setTimeout(processVoiceQueue, 200);
+      };
+      
+      utterance.onerror = (event) => {
+        console.error('🔊 Speech synthesis error:', event.error);
+        isSpeaking.current = false;
+        // Process next message in queue after error
+        setTimeout(processVoiceQueue, 200);
+      };
+      
+      window.speechSynthesis.speak(utterance);
+    } else {
+      console.warn('🔊 Speech synthesis not supported');
+      isSpeaking.current = false;
+    }
+  };
+
+  // Text-to-speech function with queue - no interruption
+  const speakText = (text, sender) => {
+    if (!voiceEnabled) return;
+    
+    // Create unique message identifier
+    const messageId = `${sender}-${text}`;
+    
+    // Don't speak if already spoken
+    if (spokenMessages.current.has(messageId)) {
+      console.log(`🔊 Skipping duplicate message: ${messageId}`);
+      return;
+    }
+    
+    // Mark as spoken
+    spokenMessages.current.add(messageId);
+    
+    // Add to voice queue
+    voiceQueue.current.push({ text, sender });
+    console.log(`🔊 Added to voice queue (${sender}):`, text);
+    
+    // Process queue if not currently speaking
+    if (!isSpeaking.current) {
+      processVoiceQueue();
+    }
+  };
+
+  // Start listening for speech
+  const startListening = () => {
+    if (speechRecognition && !isListening) {
+      speechRecognition.start();
+    }
+  };
+
+  // Stop listening for speech
+  const stopListening = () => {
+    if (speechRecognition && isListening) {
+      speechRecognition.stop();
+    }
+  };
+
+  // Toggle voice on/off
+  const toggleVoice = () => {
+    setVoiceEnabled(!voiceEnabled);
+    if (voiceEnabled) {
+      // Clear queues and reset state when disabling voice
+      voiceQueue.current = [];
+      displayQueue.current = [];
+      isSpeaking.current = false;
+      spokenMessages.current.clear();
+      window.speechSynthesis?.cancel();
+    } else {
+      // Test both voices when enabling
+      console.log('🔊 Testing both voice systems...');
+      if ('speechSynthesis' in window && window.speechSynthesis) {
+        const voices = window.speechSynthesis.getVoices();
+        console.log('🔊 Available voices:', voices.map(v => v.name));
+        
+        // Test IVR SYSTEM voice (male)
+        const ivrVoice = voices.find(voice => 
+          voice.name.includes('Male') || 
+          voice.name.includes('Alex') || 
+          voice.name.includes('David')
+        );
+        
+        // Test EH BOT voice (female)
+        const botVoice = voices.find(voice => 
+          voice.name.includes('Female') || 
+          voice.name.includes('Samantha') || 
+          voice.name.includes('Victoria')
+        );
+        
+        // Test IVR SYSTEM voice
+        if (ivrVoice) {
+          const ivrTest = new SpeechSynthesisUtterance('IVR SYSTEM voice test');
+          ivrTest.voice = ivrVoice;
+          ivrTest.onend = () => {
+            console.log('🔊 IVR SYSTEM voice test completed');
+            // Test EH BOT voice after IVR
+            if (botVoice) {
+              const botTest = new SpeechSynthesisUtterance('EH BOT voice test');
+              botTest.voice = botVoice;
+              botTest.onend = () => console.log('🔊 EH BOT voice test completed');
+              window.speechSynthesis.speak(botTest);
+            }
+          };
+          window.speechSynthesis.speak(ivrTest);
+        } else {
+          console.log('🔊 No suitable IVR SYSTEM voice found');
+        }
+      }
+    }
+  };
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      socketService.disconnect();
+      activeService.disconnect();
+      if (speechRecognition) {
+        speechRecognition.stop();
+      }
+      // Clear queues and reset voice state
+      voiceQueue.current = [];
+      displayQueue.current = [];
+      isSpeaking.current = false;
+      spokenMessages.current.clear();
+      window.speechSynthesis?.cancel();
+      setIsInitialized(false);
     };
-  }, []);
+  }, [speechRecognition]);
 
   // Prevent body scrolling when chat is active
   useEffect(() => {
@@ -370,6 +730,9 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
           <div className={styles.chatHeaderContent}>
             <Title level={4} className={styles.chatTitle}>
               Call with IVR
+              <Tag color="orange" style={{ marginLeft: '10px', fontSize: '10px' }}>
+                MOCK API MODE
+              </Tag>
             </Title>
             <Space>
               {/* End call functionality removed */}
@@ -425,53 +788,51 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
         ) : (
           <div>
             {messages.map((msg) => {
-              console.log('🎨 Rendering message:', msg.sender.name, 'Is EH BOT:', msg.sender.name === 'EH BOT');
+              console.log('🎨 Rendering message:', msg.sender.name);
+              const isUserMessage = msg.sender.name === 'you' || msg.sender.name === 'EH BOT';
+              const messageStyle = getMessageStyle(msg.sender, msg.isError);
+              
+              // Display name: "you" from backend shows as "EH BOT" in UI, "IVR" shows as "IVR SYSTEM"
+              const displayName = msg.sender.name === 'you' ? 'EH BOT' : 
+                                 msg.sender.name === 'IVR' ? 'IVR SYSTEM' : msg.sender.name;
+              
               return (
-                <div key={msg.id} className={`${styles.messageContainer} ${msg.sender.name !== 'EH BOT' ? styles.botMessage : ''}`}>
+                <div key={msg.id} className={`${styles.messageContainer} ${!isUserMessage ? styles.botMessage : ''}`}>
                   <div className={styles.messageLayout}>
-                    {msg.sender.name === 'EH BOT' ? (
-                      // EH BOT message - Avatar first, then message (right side)
-                      <>
-                        <Avatar 
-                          icon={generateAvatar(msg.sender)}
-                          className={styles.userAvatar}
-                        />
-                        <div className={styles.messageContent}>
-                          <div className={`${styles.messageBubble} ${styles.messageBubbleUser} ${msg.isError ? styles.messageBubbleError : ''}`}>
-                            <div style={{ marginBottom: '4px' }}>
-                              <Text strong style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)' }}>
-                                {msg.sender.name}
-                              </Text>
-                            </div>
-                            {msg.text}
-                          </div>
-                          <Text type="secondary" className={styles.messageTimestamp}>
-                            {formatTime(msg.timestamp)}
+                    <Avatar 
+                      icon={generateAvatar(msg.sender)}
+                      className={isUserMessage ? styles.userAvatar : styles.botAvatar}
+                      style={{
+                        background: (msg.sender.name === 'IVR SYSTEM' || msg.sender.name === 'IVR') ? '#1890ff' : 
+                                   (msg.sender.name === 'EH BOT' || msg.sender.name === 'you') ? '#52c41a' : undefined,
+                        color: (msg.sender.name === 'IVR SYSTEM' || msg.sender.name === 'IVR' || msg.sender.name === 'EH BOT' || msg.sender.name === 'you') ? 'white' : undefined,
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                        border: '2px solid white'
+                      }}
+                    />
+                    <div className={styles.messageContent}>
+                      <div 
+                        className={`${styles.messageBubble} ${msg.isError ? styles.messageBubbleError : ''}`}
+                        style={messageStyle}
+                      >
+                        <div style={{ marginBottom: '6px' }}>
+                          <Text strong style={{ 
+                            fontSize: '13px', 
+                            color: (msg.sender.name === 'EH BOT' || msg.sender.name === 'you') ? '#389e0d' :
+                                   (msg.sender.name === 'IVR SYSTEM' || msg.sender.name === 'IVR') ? '#0050b3' :
+                                   isUserMessage ? 'rgba(255,255,255,0.9)' : '#666',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px'
+                          }}>
+                            {displayName}
                           </Text>
                         </div>
-                      </>
-                    ) : (
-                      // IVR/System message - Avatar first, then message (left side)
-                      <>
-                        <Avatar 
-                          icon={generateAvatar(msg.sender)}
-                          className={styles.botAvatar}
-                        />
-                        <div className={styles.messageContent}>
-                          <div className={`${styles.messageBubble} ${styles.messageBubbleBot} ${msg.isError ? styles.messageBubbleError : ''}`}>
-                            <div style={{ marginBottom: '4px' }}>
-                              <Text strong style={{ fontSize: '12px', color: '#666' }}>
-                                {msg.sender.name}
-                              </Text>
-                            </div>
-                            {msg.text}
-                          </div>
-                          <Text type="secondary" className={styles.messageTimestamp}>
-                            {formatTime(msg.timestamp)}
-                          </Text>
-                        </div>
-                      </>
-                    )}
+                        {msg.text}
+                      </div>
+                      <Text type="secondary" className={styles.messageTimestamp}>
+                        {formatTime(msg.timestamp)}
+                      </Text>
+                    </div>
                   </div>
                 </div>
               );
@@ -494,26 +855,44 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
         )}
       </div>
 
-      {/* No Input Area - Read Only Chat */}
-      
-      {!socketConnected && (
-        <div className={styles.inputArea}>
+      {/* Input Area with Voice Controls */}
+      <div className={styles.inputArea}>
+        {!socketConnected && !MOCK_CONFIG.enableMockSocket ? (
           <div style={{ textAlign: 'center', padding: '16px', color: '#8c8c8c' }}>
             <ClockCircleOutlined style={{ marginRight: '8px' }} />
             Connecting to call...
           </div>
-        </div>
-      )}
-      
-      {chatCompletionStatus && (
-        <div className={styles.inputArea}>
+        ) : chatCompletionStatus ? (
           <div className={styles.completionTag}>
             <Tag color="success" icon={<CheckCircleOutlined />}>
               Call completed
             </Tag>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className={styles.inputContainer}>
+            {/* Text Input */}
+            <div className={styles.textInputContainer}>
+              <TextArea
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Type your message..."
+                autoSize={{ minRows: 1, maxRows: 4 }}
+                className={styles.textInput}
+              />
+              <Button
+                type="primary"
+                icon={<SendOutlined />}
+                onClick={sendMessage}
+                disabled={!newMessage.trim()}
+                className={styles.sendButton}
+              >
+                Send
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
     </Card>
   );
 };

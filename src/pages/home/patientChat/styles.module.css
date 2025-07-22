@@ -380,7 +380,7 @@
 
 /* Avatar Styles */
 .userAvatar {
-  background: #52c41a;
+  background: #1890ff;
   margin-left: 0;
   margin-right: 0;
   flex-shrink: 0;
@@ -400,8 +400,8 @@
 }
 
 .botAvatar {
-  background: #1890ff;
-  color: white;
+  background: #f0f0f0;
+  color: #666;
   flex-shrink: 0;
 }
 
@@ -430,6 +430,102 @@
 
 .completionTag {
   text-align: center;
+}
+
+/* Voice Controls */
+.inputContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.voiceControls {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.voiceButton {
+  border-radius: 20px;
+  min-width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.voiceButton:hover {
+  transform: scale(1.05);
+}
+
+.textInputContainer {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.textInput {
+  flex: 1;
+  border-radius: 25px;
+  resize: none;
+  border: 2px solid #e8e8e8;
+  transition: all 0.3s ease;
+  padding: 12px 20px;
+  font-size: 14px;
+  background: #fafafa;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.textInput:focus {
+  border-color: #52c41a;
+  box-shadow: 0 0 0 3px rgba(82, 196, 26, 0.1);
+  background: white;
+}
+
+.sendButton {
+  border-radius: 25px;
+  height: 48px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  background: #52c41a;
+  border-color: #52c41a;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(82, 196, 26, 0.3);
+}
+
+.sendButton:hover {
+  transform: scale(1.05);
+  background: #73d13d;
+  border-color: #73d13d;
+  box-shadow: 0 6px 16px rgba(82, 196, 26, 0.4);
+}
+
+.voiceStatus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: rgba(24, 144, 255, 0.1);
+  border-radius: 20px;
+  border: 1px solid rgba(24, 144, 255, 0.2);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(24, 144, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(24, 144, 255, 0);
+  }
 }
 
 /* Animations */

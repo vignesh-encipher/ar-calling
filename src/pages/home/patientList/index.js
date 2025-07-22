@@ -45,41 +45,62 @@ const PatientList = ({ onPatientSelect, selectedPatient, chatCompletionStatus, o
   const [loading, setLoading] = useState(false);
   const [callingPatientId, setCallingPatientId] = useState(null);
 
-  // Load patients data from dummy data
+  // Load patients data from real API
   useEffect(() => {
     const loadPatients = async () => {
       setLoading(true);
       
       try {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 500));
+        console.log('🔄 Fetching patients from API...');
         
-        // Use dummy data instead of API call
-        setPatients(dummyPatients);
-        
-        // Initialize chat completion status if not provided
-        if (!chatCompletionStatus || Object.keys(chatCompletionStatus).length === 0) {
-          const initialStatus = {};
-          dummyPatients.forEach(patient => {
-            if (patient && patient.key) {
-              initialStatus[patient.key] = patient.chatCompleted || false;
-            }
-          });
-          // Update parent component with initial status
-          dummyPatients.forEach(patient => {
-            if (patient && patient.key) {
-              onChatComplete(patient.key, patient.chatCompleted || false);
-            }
-          });
+        // Call the proxy API route to avoid CORS issues
+        const response = await fetch('/api/patients', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
+
+        const data = await response.json();
+        console.log('📊 API Response:', data);
+
+        // Data is already transformed by the proxy API route
+        const transformedPatients = data || [];
+
+        setPatients(transformedPatients);
         
-        console.log('✅ Loaded dummy patients:', dummyPatients.length);
+        // Initialize chat completion status
+        const initialStatus = {};
+        transformedPatients.forEach(patient => {
+          if (patient && patient.key) {
+            initialStatus[patient.key] = patient.chatCompleted || false;
+            onChatComplete(patient.key, patient.chatCompleted || false);
+          }
+        });
+        
+        console.log('✅ Loaded patients from API:', transformedPatients.length);
+        message.success(`Loaded ${transformedPatients.length} patients successfully`);
         
       } catch (error) {
-        console.error('Error loading patients:', error);
-        setPatients([]);
-        setChatCompletionStatus({});
-        message.error('Failed to load patients');
+        console.error('❌ Error loading patients from API:', error);
+        
+        // Fallback to dummy data if API fails
+        console.log('⚠️ API failed, falling back to dummy data...');
+        setPatients(dummyPatients);
+        
+        const initialStatus = {};
+        dummyPatients.forEach(patient => {
+          if (patient && patient.key) {
+            initialStatus[patient.key] = patient.chatCompleted || false;
+            onChatComplete(patient.key, patient.chatCompleted || false);
+          }
+        });
+        
+        message.warning('Using dummy data (API unavailable)');
       } finally {
         setLoading(false);
       }
@@ -127,7 +148,7 @@ const PatientList = ({ onPatientSelect, selectedPatient, chatCompletionStatus, o
       console.log('📞 Starting call process for patient:', record.key);
       
       // Step 1: Try to call the connect API to get callSid
-      let callResponse = await apiService.connectCall();
+      let callResponse = await apiService.connectCall(record.key);
       
       // If real API fails, use mock data for testing
       if (!callResponse.success) {
@@ -186,14 +207,15 @@ const PatientList = ({ onPatientSelect, selectedPatient, chatCompletionStatus, o
       // Step 2: Set selected patient to trigger chat
       onPatientSelect(record);
       
-      // Step 3: Connect to WebSocket with callSid
-      console.log('🔌 Attempting WebSocket connection with callSid:', callSid);
+      // Step 3: Connect to real WebSocket with callSid
+      console.log('🔌 Attempting real WebSocket connection with callSid:', callSid);
       try {
         await socketService.connect(callSid);
-        console.log('✅ WebSocket connection successful');
+        console.log('✅ Real WebSocket connection successful');
       } catch (socketError) {
-        console.error('❌ WebSocket connection failed:', socketError);
-        throw socketError;
+        console.error('❌ Real WebSocket connection failed:', socketError);
+        // Don't throw error, continue with mock if needed
+        console.log('⚠️ Continuing with mock socket...');
       }
       
       message.success(`Call connected with ${record.patientName} (Call ID: ${callSid})`);
@@ -222,30 +244,54 @@ const PatientList = ({ onPatientSelect, selectedPatient, chatCompletionStatus, o
   const handleRetry = () => {
     setLoading(true);
     setPatients([]);
-    setChatCompletionStatus({});
     
     setTimeout(() => {
       const loadPatients = async () => {
         try {
-          // Simulate API delay
-          await new Promise(resolve => setTimeout(resolve, 500));
+          console.log('🔄 Retrying API call...');
           
-          // Use dummy data instead of API call
-          setPatients(dummyPatients);
-          
-          const initialStatus = {};
-          dummyPatients.forEach(patient => {
-            if (patient && patient.key) {
-              initialStatus[patient.key] = patient.chatCompleted || false;
+          // Call the proxy API route to avoid CORS issues
+          const response = await fetch('/api/patients', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
             }
           });
-          setChatCompletionStatus(initialStatus);
-          message.success('Patients loaded successfully');
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          console.log('📊 Retry API Response:', data);
+
+          // Data is already transformed by the proxy API route
+          const transformedPatients = data || [];
+
+          setPatients(transformedPatients);
+          
+          // Initialize chat completion status
+          transformedPatients.forEach(patient => {
+            if (patient && patient.key) {
+              onChatComplete(patient.key, patient.chatCompleted || false);
+            }
+          });
+          
+          message.success(`Retry successful! Loaded ${transformedPatients.length} patients`);
           
         } catch (error) {
-          console.error('Retry failed:', error);
-          setPatients([]);
-          message.error('Failed to load patients');
+          console.error('❌ Retry failed:', error);
+          
+          // Fallback to dummy data
+          setPatients(dummyPatients);
+          
+          dummyPatients.forEach(patient => {
+            if (patient && patient.key) {
+              onChatComplete(patient.key, patient.chatCompleted || false);
+            }
+          });
+          
+          message.warning('Retry failed, using dummy data');
         } finally {
           setLoading(false);
         }

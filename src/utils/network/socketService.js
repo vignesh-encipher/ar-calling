@@ -19,8 +19,9 @@ class SocketService {
 
     return new Promise((resolve, reject) => {
       try {
-        const wsUrl = `ws://172.179.1.218:8081/ws?callSid=${callSid}`;
-        console.log('🔌 Connecting to WebSocket:', wsUrl);
+        // Use real socket API with call ID
+        const wsUrl = `wss://143742ebcc60.ngrok-free.app/ws?callSid=${callSid}`;
+        console.log('🔌 Connecting to real WebSocket:', wsUrl);
         
         this.callSid = callSid;
         this.socket = new WebSocket(wsUrl);

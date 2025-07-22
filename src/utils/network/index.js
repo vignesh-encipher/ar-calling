@@ -32,50 +32,31 @@ export async function requestExternal(url, options, path) {
 
 // API Service functions using fetch instead of axios
 export const apiService = {
-  // Connect to call API
-  async connectCall() {
+  // Connect to call API with patient ID
+  async connectCall(patientId) {
     try {
-      console.log('📞 Connecting to call API...');
+      console.log('📞 Connecting call for patient ID:', patientId);
       
-      // Use local API route to avoid CORS issues
-      const response = await fetch('/api/call', {
-        method: 'GET',
+      const response = await fetch('/api/connect-call', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({ patientId })
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      const data = await response.json();
+      console.log('✅ Call connect response:', data);
       
-      // Check if response is JSON or plain text
-      const contentType = response.headers.get('content-type');
-      let data;
-      
-      if (contentType && contentType.includes('application/json')) {
-        data = await response.json();
-      } else {
-        // Handle plain text response
-        const textData = await response.text();
-        data = {
-          callId: textData,
-          message: 'Call connected successfully',
-          timestamp: new Date().toISOString()
-        };
-      }
-      
-      console.log('✅ Call API Response:', data);
-      
-      return {
-        success: true,
-        data: data
-      };
+      return data;
     } catch (error) {
-      console.error('❌ Call API Error:', error);
-      
-      // If the API fails, try the mock response
-      console.log('🔄 Trying mock response...');
+      console.error('❌ Call connect error:', error);
+      // Fallback to mock service
+      console.log('⚠️ Falling back to mock call service...');
       return this.connectCallMock();
     }
   },
@@ -96,32 +77,13 @@ export const apiService = {
 
   // End call API
   async endCall(callId) {
-    try {
-      console.log('📞 Ending call with ID:', callId);
-      
-      // Use local API route to avoid CORS issues
-      const response = await fetch(`/api/call/end?callId=${callId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Call-ID': callId
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('✅ Call End Response:', data);
-      
-      return data;
-    } catch (error) {
-      console.error('❌ Call End Error:', error);
-      return {
-        success: false,
-        error: error.message
-      };
-    }
+    // Always use mock service - no real API calls
+    console.log('📞 Using mock end call service (real API disabled)...');
+    return {
+      success: true,
+      message: 'Mock call ended successfully',
+      callId: callId,
+      timestamp: new Date().toISOString()
+    };
   }
 };
