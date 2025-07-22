@@ -15,7 +15,7 @@ export const MOCK_DELAY = 1000; // Delay for mock responses in milliseconds
 export const FORCE_MOCK_MODE = false; // Set to false for real API calls
 
 // Socket Configuration
-export const SOCKET_BASE_URL = 'wss://143742ebcc60.ngrok-free.app'; // Real socket URL
+export const SOCKET_BASE_URL = 'wss://26543899bee7.ngrok-free.app'; // Real socket URL
 
 // Mock data configuration
 export const MOCK_CONFIG = {

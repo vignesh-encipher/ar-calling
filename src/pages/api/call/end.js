@@ -33,7 +33,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const CALL_API_URL = 'https://44380e6a9792.ngrok-free.app';
+    const CALL_API_URL = 'https://26543899bee7.ngrok-free.app';
     console.log('📞 Calling external API:', `${CALL_API_URL}/call/end?callId=${callId}`);
     
     const response = await fetch(`${CALL_API_URL}/call/end?callId=${callId}`, {

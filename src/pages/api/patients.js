@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   try {
     console.log('🔄 Proxying request to external API...');
     
-    const response = await fetch('https://143742ebcc60.ngrok-free.app/ar/get/allPatients', {
+    const response = await fetch('https://26543899bee7.ngrok-free.app/ar/get/allPatients', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

@@ -12,7 +12,7 @@ export default async function handler(req, res) {
 
     console.log('🔄 Connecting call for patient ID:', patientId);
     
-    const apiUrl = `https://143742ebcc60.ngrok-free.app/ar/connect?patientId=${patientId}`;
+    const apiUrl = `https://26543899bee7.ngrok-free.app/ar/connect?patientId=${patientId}`;
     console.log('🌐 Calling API URL:', apiUrl);
     
     const response = await fetch(apiUrl, {
