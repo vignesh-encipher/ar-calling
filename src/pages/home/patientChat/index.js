@@ -157,18 +157,15 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
       setSocketConnected(status === 'connected');
       if (status === 'connected') {
         setCallStatus('connected');
-        message.success('Call connected successfully');
         setLoading(false);
 
         // Call connected successfully
         console.log('📞 Call connected successfully');
       } else if (status === 'disconnected') {
         setCallStatus('failed');
-        message.warning('Call disconnected');
         setLoading(false);
       } else if (status === 'error') {
         setCallStatus('failed');
-        message.error('Call connection failed');
         setLoading(false);
       }
     });
@@ -183,44 +180,42 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
     console.log('🔍 Current processedMessageIds size:', processedMessageIds.size);
     console.log('🔍 Current messages count:', messages.length);
 
-    // Create a unique message identifier for duplicate detection
+    // Use the unique ID from backend for duplicate detection
+    const backendMessageId = message.id;
     const senderName = message.name || message.sender?.name;
     const messageText = message.text?.trim();
 
-    // Use a more stable message ID without timestamp for duplicate detection
-    const stableMessageId = `${senderName}-${messageText}`;
-    console.log('🔍 Stable message ID:', stableMessageId);
+    console.log('🔍 Backend message ID:', backendMessageId);
+    console.log('🔍 Sender name:', senderName);
+    console.log('🔍 Message text:', messageText);
 
-    // Check if we've already processed this exact message (using ref for immediate access)
-    if (processedMessageIdsRef.current.has(stableMessageId)) {
+    // Check if we've already processed this exact message using backend ID
+    if (processedMessageIdsRef.current.has(backendMessageId)) {
       console.log('⚠️ Duplicate message detected (already processed), skipping:', messageText);
-      console.log('⚠️ Stable message ID:', stableMessageId);
+      console.log('⚠️ Backend message ID:', backendMessageId);
       console.log('⚠️ Processed message IDs count:', processedMessageIdsRef.current.size);
       return;
     }
 
     // Also check for existing message in current state as backup
-    const existingMessage = messages.find(msg =>
-      msg.text === messageText &&
-      msg.sender.name === senderName
-    );
+    const existingMessage = messages.find(msg => msg.id === backendMessageId);
 
     if (existingMessage) {
       console.log('⚠️ Duplicate message detected (in state), skipping:', messageText);
       console.log('⚠️ Existing message ID:', existingMessage.id);
-      console.log('⚠️ Stable message ID:', stableMessageId);
+      console.log('⚠️ Backend message ID:', backendMessageId);
       console.log('⚠️ Total messages in state:', messages.length);
       return;
     }
 
     // Immediately mark as processed to prevent race conditions (using ref)
-    processedMessageIdsRef.current.add(stableMessageId);
-    setProcessedMessageIds(prev => new Set([...prev, stableMessageId]));
-    console.log('✅ Marked message as processed:', stableMessageId);
+    processedMessageIdsRef.current.add(backendMessageId);
+    setProcessedMessageIds(prev => new Set([...prev, backendMessageId]));
+    console.log('✅ Marked message as processed:', backendMessageId);
     console.log('✅ New processedMessageIds size:', processedMessageIdsRef.current.size);
 
-    // Create final message ID with timestamp for uniqueness
-    const messageId = message.id || `${stableMessageId}-${Date.now()}`;
+    // Use the backend message ID directly
+    const messageId = backendMessageId;
 
     // Handle different message formats from WebSocket
     if (message.messageType === 'Message received') {
@@ -366,9 +361,8 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
       };
       setMessages(prev => [...prev, localMessage]);
       setNewMessage('');
-      message.success('Message sent!');
     } else {
-      message.error('Failed to send message');
+      console.log('Failed to send message');
     }
   };
 
@@ -499,7 +493,6 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
       recognition.onerror = (event) => {
         console.error('🎤 Speech recognition error:', event.error);
         setIsListening(false);
-        message.error('Speech recognition failed');
       };
 
       recognition.onend = () => {
@@ -840,7 +833,7 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
           <div className={styles.emptyState}>
             <PhoneOutlined className={styles.emptyStateIcon} />
             <br />
-            <Text>Call connected. Start your conversation with {selectedPatient.patientName}</Text>
+            <Text>Call connected to IVR. Please wait for the conversation to start.</Text>
           </div>
         ) : (
           <div>
