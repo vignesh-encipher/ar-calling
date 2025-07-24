@@ -369,7 +369,7 @@ const PatientList = ({ onPatientSelect, selectedPatient, chatCompletionStatus, o
             loading={callingPatientId === patient.key}
             className={patient.chatCompleted ? `${styles.chatButton} ${styles.chatButtonCompleted}` : styles.chatButton}
           >
-            {patient.chatCompleted ? 'Completed' : callingPatientId === patient.key ? 'Connecting...' : 'Call'}
+            {patient.chatCompleted ? 'Completed' : callingPatientId === patient.key ? 'Connecting...' : '+18772358073'}
           </Button>
         </div>
       </div>

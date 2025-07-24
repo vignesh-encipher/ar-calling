@@ -11,7 +11,7 @@ export const buildIdGen = process.env.NEXT_PUBLIC_BUILD_ID;
 
 // ===== CENTRALIZED API CONFIGURATION =====
 // Change this single domain to update all API endpoints
-const API_DOMAIN = '09db797aeeea.ngrok-free.app';
+const API_DOMAIN = 'ar.encipherhealth.com';
 
 // API Base URLs
 export const API_BASE_URL = `https://${API_DOMAIN}`;
