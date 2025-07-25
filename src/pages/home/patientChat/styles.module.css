@@ -1,0 +1,601 @@
+/* Chat Container */
+.chatContainer {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+/* Chat Header */
+.chatHeader {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  z-index: 100;
+}
+
+.chatHeaderContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 16px;
+}
+
+.chatTitle {
+  margin: 0;
+  color: white;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.chatStatus {
+  color: white;
+  font-size: 14px;
+  margin-left: 8px;
+}
+
+.chatCompletionIcon {
+  color: #52c41a;
+  font-size: 18px;
+  margin-left: 8px;
+}
+
+.exitButton {
+  background: #ff4d4f !important;
+  border: 2px solid #ff4d4f !important;
+  color: white !important;
+  transition: all 0.3s ease;
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(255, 77, 79, 0.4);
+  z-index: 1000;
+  position: relative;
+  border-radius: 8px;
+  padding: 8px 16px;
+  min-width: 100px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.exitButton:hover {
+  background: #ff7875 !important;
+  border-color: #ff7875 !important;
+  color: white !important;
+  box-shadow: 0 6px 16px rgba(255, 77, 79, 0.5);
+  transform: translateY(-2px);
+  scale: 1.02;
+}
+
+/* Welcome State */
+.welcomeState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px;
+}
+
+.welcomeContent {
+  text-align: center;
+  color: #8c8c8c;
+  font-size: 16px;
+}
+
+.welcomeIcon {
+  font-size: 48px;
+  color: #d9d9d9;
+  margin-bottom: 16px;
+}
+
+/* Patient Info Header */
+.patientInfoHeader {
+  padding: 16px 24px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e8e8e8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.voiceIndicator {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  background: rgba(82, 196, 26, 0.1);
+  border-radius: 6px;
+  border: 1px solid rgba(82, 196, 26, 0.2);
+}
+
+/* Messages Area */
+.messagesArea {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
+  height: 100%;
+  min-height: 0;
+  position: relative;
+}
+
+/* Floating End Call Button */
+.floatingEndCallButton {
+  position: fixed;
+  top: 100px;
+  right: 30px;
+  z-index: 1000;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 6px 20px rgba(255, 77, 79, 0.5);
+  }
+  50% {
+    box-shadow: 0 6px 20px rgba(255, 77, 79, 0.8);
+  }
+  100% {
+    box-shadow: 0 6px 20px rgba(255, 77, 79, 0.5);
+  }
+}
+
+.floatingExitButton {
+  background: #ff4d4f !important;
+  border: 2px solid #ff4d4f !important;
+  color: white !important;
+  transition: all 0.3s ease;
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: 0 6px 20px rgba(255, 77, 79, 0.5);
+  border-radius: 12px;
+  padding: 12px 20px;
+  height: auto;
+  min-width: 120px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.floatingExitButton:hover {
+  background: #ff7875 !important;
+  border-color: #ff7875 !important;
+  color: white !important;
+  box-shadow: 0 8px 25px rgba(255, 77, 79, 0.6);
+  transform: translateY(-3px);
+  scale: 1.05;
+}
+
+/* Loading Container */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px;
+}
+
+/* Call Connecting Animation */
+.callConnecting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px;
+}
+
+.callIcon {
+  margin-bottom: 24px;
+  animation: phonePulse 2s ease-in-out infinite;
+}
+
+.connectingText {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.connectingDots {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #1890ff;
+  animation: dotPulse 1.4s ease-in-out infinite both;
+}
+
+.dot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes phonePulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+@keyframes dotPulse {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+/* Empty State */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #8c8c8c;
+  font-style: italic;
+}
+
+.emptyStateIcon {
+  font-size: 48px;
+  color: #d9d9d9;
+  margin-bottom: 16px;
+}
+
+/* Message Container */
+.messageContainer {
+  margin-bottom: 16px;
+  animation: fadeInUp 0.3s ease-out;
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.messageContainer.botMessage {
+  justify-content: flex-start;
+}
+
+.messageLayout {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 80%;
+  width: 100%;
+}
+
+/* For EH BOT messages (right side) */
+.messageContainer:not(.botMessage) .messageLayout {
+  flex-direction: row;
+  justify-content: flex-end;
+  gap: 0;
+  align-items: flex-end;
+  position: relative;
+}
+
+/* For IVR/System messages (left side) */
+.messageContainer.botMessage .messageLayout {
+  flex-direction: row;
+  justify-content: flex-start;
+}
+
+.messageContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+}
+
+.messageContent.botContent {
+  align-items: flex-start;
+}
+
+/* For EH BOT messages (right side) */
+.messageContainer:not(.botMessage) .messageContent {
+  align-items: flex-end;
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* For IVR/System messages (left side) */
+.messageContainer.botMessage .messageContent {
+  align-items: flex-start;
+}
+
+/* Message Bubble */
+.messageBubble {
+  max-width: 70%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  word-wrap: break-word;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  animation: messageSlideIn 0.3s ease-out;
+  line-height: 1.4;
+  font-size: 14px;
+}
+
+.messageBubbleUser {
+  background: #1890ff;
+  color: white;
+  margin-left: auto;
+  margin-right: 0;
+  border-bottom-right-radius: 4px;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+  align-self: flex-end;
+}
+
+/* EH BOT message bubble specific styling */
+.messageContainer:not(.botMessage) .messageBubbleUser {
+  margin-left: 0;
+  margin-right: 40px;
+  padding-right: 40px;
+}
+
+.messageBubbleBot {
+  background: #f0f0f0;
+  color: #333;
+  margin-right: auto;
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  align-self: flex-start;
+}
+
+.messageBubbleError {
+  background: #ff4d4f;
+  color: white;
+}
+
+/* Message Timestamp */
+.messageTimestamp {
+  font-size: 10px;
+  color: #999;
+  margin-top: 4px;
+}
+
+/* Avatar Styles */
+.userAvatar {
+  background: #52c41a;
+  margin-left: 0;
+  margin-right: 0;
+  flex-shrink: 0;
+  color: white;
+}
+
+/* EH BOT specific avatar styling */
+.messageContainer:not(.botMessage) .userAvatar {
+  margin-right: 0;
+  margin-left: 0;
+  margin-bottom: 0;
+  margin-top: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 10;
+}
+
+.botAvatar {
+  background: #1890ff;
+  color: white;
+  flex-shrink: 0;
+}
+
+/* Typing Indicator */
+.typingIndicator {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+  animation: fadeInUp 0.3s ease-out;
+}
+
+.typingIndicator .messageBubble {
+  max-width: 120px;
+  background: #f0f0f0;
+  color: #666;
+}
+
+/* Input Area */
+.inputArea {
+  padding: 16px 24px;
+  background: #f8f9fa;
+  border-top: 1px solid #e8e8e8;
+  flex-shrink: 0;
+}
+
+.completionTag {
+  text-align: center;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scrollbar Styling for Messages Area */
+.messagesArea::-webkit-scrollbar {
+  width: 8px;
+  display: block;
+}
+
+.messagesArea::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.messagesArea::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+  opacity: 1;
+}
+
+.messagesArea::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Always show scrollbar when there are messages */
+.hasMessages::-webkit-scrollbar-thumb {
+  background: #c1c1c1 !important;
+}
+
+.hasMessages::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+}
+
+/* Ensure the card body doesn't cause overflow */
+.chatContainer .ant-card-body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+
+/* Ensure patient info header doesn't grow */
+.patientInfoHeader {
+  padding: 16px 24px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e8e8e8;
+  flex-shrink: 0;
+}
+
+/* Ensure input area doesn't grow and remove white space */
+.inputArea {
+  padding: 16px 24px;
+  background: #f8f9fa;
+  border-top: 1px solid #e8e8e8;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+/* Remove any bottom margin/padding that might cause white space */
+.chatContainer {
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.chatContainer .ant-card {
+  margin-bottom: 0;
+}
+
+/* Ensure proper spacing in chat area */
+.messagesArea {
+  padding-bottom: 20px;
+}
+
+/* Always show scrollbar when conversation is active */
+.messagesArea.hasMessages {
+  overflow-y: scroll !important;
+}
+
+.messagesArea.hasMessages::-webkit-scrollbar {
+  width: 8px;
+  display: block !important;
+}
+
+.messagesArea.hasMessages::-webkit-scrollbar-thumb {
+  background: #c1c1c1 !important;
+  border-radius: 4px;
+  opacity: 1 !important;
+}
+
+.messagesArea.hasMessages::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 4px;
+  opacity: 1 !important;
+}
+
+/* Ensure the last message has proper spacing */
+.messageContainer:last-child {
+  margin-bottom: 0;
+}
+
+
+
+/* Ensure typing indicator doesn't cause extra space */
+.typingIndicator {
+  margin-bottom: 16px;
+}
+
+.typingIndicator:last-child {
+  margin-bottom: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .chatContainer {
+    min-height: 500px;
+  }
+  
+  .chatHeader {
+    padding: 16px 20px;
+  }
+  
+  .messagesArea {
+    padding: 16px;
+  }
+  
+  .chatHeaderContent {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .messageBubble {
+    max-width: 85%;
+  }
+
+  .floatingEndCallButton {
+    top: 80px;
+    right: 20px;
+  }
+
+  .floatingExitButton {
+    padding: 8px 16px;
+    font-size: 12px;
+    min-width: 100px;
+  }
+} 

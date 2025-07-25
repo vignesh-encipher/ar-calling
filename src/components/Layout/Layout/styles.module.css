@@ -1,5 +1,5 @@
 .customHeader {
-  background: var(--navBarBG) !important;
+  /* background: var(--navBarBG) !important; */
   height: 60px;
   padding: 0 20px;
 }

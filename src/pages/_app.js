@@ -7,6 +7,8 @@ import Router from "next/router";
 import { MsalProvider } from "@azure/msal-react";
 import "../styles/globals.css";
 import "bootstrap/dist/css/bootstrap.css";
+
+import "antd/dist/reset.css";
 import SidebarHeader from "@/components/Layout/Layout";
 import useSecurePage from "./useSecurePage";
 import {

@@ -1,3 +1,5 @@
+@import 'antd/dist/reset.css'; /* ✅ Ant Design v5 global reset */
+
 :root {
   --app-primary: #04306f;
   --app-primary-hover: #6c9ddd;
@@ -88,4 +90,40 @@ body {
 
 .font-weight4 {
   font-weight: 700;
+}
+
+/* Patient List Table Styling */
+.table-row-even {
+  background-color: #fafafa;
+}
+
+.table-row-odd {
+  background-color: #ffffff;
+}
+
+.table-row-even:hover,
+.table-row-odd:hover {
+  background-color: #e6f7ff !important;
+  transition: background-color 0.3s ease;
+}
+
+/* Custom scrollbar styling */
+.ant-table-body::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.ant-table-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.ant-table-body::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+.ant-table-body::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
