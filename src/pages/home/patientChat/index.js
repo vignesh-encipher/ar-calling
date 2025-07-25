@@ -48,6 +48,9 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
   const [isInitialized, setIsInitialized] = useState(false); // Track if socket is already initialized
   const [handlersRegistered, setHandlersRegistered] = useState(false); // Track if handlers are registered
   const [processedMessageIds, setProcessedMessageIds] = useState(new Set()); // Track processed message IDs
+  const [currentlySpeakingId, setCurrentlySpeakingId] = useState(null);
+  const [currentWordIndex, setCurrentWordIndex] = useState(0);
+  const [speakingMessageText, setSpeakingMessageText] = useState('');
 
   // Debug voice state and check speech synthesis
   useEffect(() => {
@@ -148,8 +151,13 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
     activeService.onMessage('system', handleSystemMessage);
     activeService.onMessage('call_status', handleCallStatusMessage);
 
-    // Also handle raw WebSocket messages (for messageType format)
-    activeService.onMessage('Message received', handleSocketMessage);
+    // Handle WebSocket messages with messageType format (but avoid duplicate processing)
+    activeService.onMessage('Message received', (message) => {
+      // Only process if it's not already handled by the 'chat' handler
+      if (message.messageType === 'Message received') {
+        handleSocketMessage(message);
+      }
+    });
     activeService.onMessage('Typing', handleTypingMessage);
 
     // Register connection handler
@@ -516,6 +524,15 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
   const addMessageToDisplayQueue = (chatMessage) => {
     console.log(`🔊 Adding message to voice queue: ${chatMessage.sender.name} - "${chatMessage.text}"`);
     console.log(`🔊 Voice enabled: ${voiceEnabled}`);
+    console.log(`🔊 Current speaking state: ${isSpeaking.current}`);
+    console.log(`🔊 Current voice queue length: ${voiceQueue.current.length}`);
+
+    // Check if this message is already in the queue to prevent duplicates
+    const isAlreadyInQueue = voiceQueue.current.some(item => item.messageId === chatMessage.id);
+    if (isAlreadyInQueue) {
+      console.log(`⚠️ Message already in queue, skipping: ${chatMessage.id}`);
+      return;
+    }
 
     // Add to voice queue only if voice is enabled
     if (voiceEnabled) {
@@ -552,6 +569,11 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
       return;
     }
 
+    // Cancel any existing speech to prevent duplicates
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+
     const { text, sender, messageId } = voiceQueue.current.shift();
     isSpeaking.current = true;
 
@@ -560,12 +582,17 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
     if (messageToDisplay) {
       setMessages(prev => [...prev, messageToDisplay]);
       console.log(`📝 Displayed message: ${sender}`);
+      
+      // Set up word highlighting for this message
+      setCurrentlySpeakingId(messageToDisplay.id);
+      setSpeakingMessageText(text);
+      setCurrentWordIndex(0);
     }
 
     if ('speechSynthesis' in window && window.speechSynthesis) {
       console.log('🔊 Speech synthesis available, creating utterance...');
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.5; // Increased speed for faster speech
+      utterance.rate = 1.3; // Slightly faster speech
       
       utterance.pitch = 1.0;
       utterance.volume = 0.8;
@@ -590,28 +617,126 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
         utterance.voice = selectedVoice;
       }
 
+      // Word boundary event for real-time word highlighting
+      utterance.onboundary = (event) => {
+        console.log('🔊 Boundary event triggered:', event.name, 'charIndex:', event.charIndex);
+        
+        if (event.name === 'word') {
+          const words = text.split(/\s+/).filter(word => word.length > 0);
+          const charIndex = event.charIndex;
+          
+          console.log('🔊 Words array:', words);
+          console.log('🔊 Current charIndex:', charIndex);
+          
+          // Improved word index calculation that handles gaps better
+          let wordIndex = 0;
+          let charCount = 0;
+          let wordStart = 0;
+          
+          // Find the word that contains the current character position
+          for (let i = 0; i < words.length; i++) {
+            const wordLength = words[i].length;
+            const wordEnd = wordStart + wordLength;
+            
+            console.log(`🔊 Word ${i}: "${words[i]}" (chars ${wordStart}-${wordEnd})`);
+            
+            if (charIndex >= wordStart && charIndex < wordEnd) {
+              wordIndex = i;
+              break;
+            }
+            
+            // Move to next word position (account for spaces and punctuation)
+            wordStart = wordEnd;
+            
+            // Skip spaces and punctuation until we find the next word
+            while (wordStart < text.length && /\s/.test(text[wordStart])) {
+              wordStart++;
+            }
+          }
+          
+          // Update word index if within bounds
+          if (wordIndex >= 0 && wordIndex < words.length) {
+            setCurrentWordIndex(wordIndex);
+            console.log(`🔊 Speaking word ${wordIndex + 1}/${words.length}: "${words[wordIndex]}"`);
+            console.log(`🔊 Current word index state: ${wordIndex}`);
+            
+            // If boundary events are working, disable manual highlighting
+            if (utterance.testInterval) {
+              clearInterval(utterance.testInterval);
+              utterance.testInterval = null;
+              console.log(`🔊 Disabled manual highlighting - boundary events working`);
+            }
+          } else {
+            console.log(`🔊 Word index out of bounds: ${wordIndex}, words length: ${words.length}`);
+          }
+        }
+      };
+
       utterance.onstart = () => {
         console.log(`🔊 Speaking (${sender}):`, text);
+        
+        // Calculate estimated speech duration and word timing
+        const words = text.split(/\s+/).filter(word => word.length > 0);
+        const totalWords = words.length;
+        
+        // Estimate speech duration based on text length and speech rate
+        const estimatedDuration = (text.length / 5) * 1000; // Rough estimate: 5 chars per second
+        const wordInterval = Math.max(400, estimatedDuration / totalWords); // Minimum 400ms per word
+        
+        console.log(`🔊 Speech analysis: ${totalWords} words, estimated duration: ${estimatedDuration}ms, interval: ${wordInterval}ms`);
+        
+        // Manual word highlighting with adaptive timing
+        let testWordIndex = 0;
+        const testInterval = setInterval(() => {
+          if (testWordIndex < totalWords) {
+            setCurrentWordIndex(testWordIndex);
+            console.log(`🔊 Manual: Highlighting word ${testWordIndex + 1}/${totalWords}: "${words[testWordIndex]}"`);
+            testWordIndex++;
+          } else {
+            clearInterval(testInterval);
+          }
+        }, wordInterval);
+        
+        // Store interval reference for cleanup
+        utterance.testInterval = testInterval;
       };
 
       utterance.onend = () => {
         console.log(`🔊 Finished speaking (${sender})`);
         isSpeaking.current = false;
+        
+        // Clear test interval if it exists
+        if (utterance.testInterval) {
+          clearInterval(utterance.testInterval);
+          utterance.testInterval = null;
+        }
+        
+        // Clear highlighting state
+        setCurrentlySpeakingId(null);
+        setCurrentWordIndex(0);
+        setSpeakingMessageText('');
+        
         // Process next message in queue after a short delay
         setTimeout(() => {
           console.log(`🔊 Processing next message in queue...`);
           processVoiceQueue();
-        }, 500); // Increased delay to ensure proper sequencing
+        }, 300); // Reduced delay for better flow
       };
 
       utterance.onerror = (event) => {
         console.error('🔊 Speech synthesis error:', event.error);
         isSpeaking.current = false;
+        
+        // Clear highlighting state on error
+        setCurrentlySpeakingId(null);
+        setCurrentWordIndex(0);
+        setSpeakingMessageText('');
+        
         // Process next message in queue after error
         setTimeout(() => {
           console.log(`🔊 Processing next message after error...`);
           processVoiceQueue();
-        }, 500);
+        }, 300);
       };
 
       window.speechSynthesis.speak(utterance);
@@ -722,6 +847,11 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
       window.speechSynthesis?.cancel();
       setIsInitialized(false);
       setHandlersRegistered(false);
+      
+      // Clear highlighting state
+      setCurrentlySpeakingId(null);
+      setCurrentWordIndex(0);
+      setSpeakingMessageText('');
       setProcessedMessageIds(new Set());
       processedMessageIdsRef.current.clear();
     };
@@ -894,7 +1024,32 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
                             {displayName}
                           </Text>
                         </div>
-                        {msg.text}
+                        <div style={{ 
+                          lineHeight: '1.5',
+                          wordWrap: 'break-word',
+                          overflowWrap: 'break-word'
+                        }}>
+                          {currentlySpeakingId === msg.id ? (
+                            // Word-by-word highlighting for currently speaking message
+                            msg.text.split(/\s+/).filter(word => word.length > 0).map((word, index) => (
+                              <span
+                                key={index}
+                                style={{
+                                  display: 'inline-block',
+                                  whiteSpace: 'nowrap',
+                                  wordBreak: 'keep-all',
+                                  fontWeight: index === currentWordIndex ? 'bold' : 'normal',
+                                  marginRight: '4px'
+                                }}
+                              >
+                                {word}
+                              </span>
+                            ))
+                          ) : (
+                            // Normal text display for non-speaking messages
+                            msg.text
+                          )}
+                        </div>
                       </div>
                       <Text type="secondary" className={styles.messageTimestamp}>
                         {formatTime(msg.timestamp)}
