@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Input, Space, Card, Typography, Tag, Button, message, Row, Col } from 'antd';
+import { Input, Space, Card, Typography, Tag, Button, message, Row, Col, Tooltip } from 'antd';
 import { SearchOutlined, UserOutlined, MessageOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
@@ -326,7 +326,9 @@ const PatientList = ({ onPatientSelect, selectedPatient, chatCompletionStatus, o
             <div>
               <Text type="secondary" className={styles.detailLabel}>NPI:</Text>
               <br />
-              <Text code className={styles.codeElement}>{patient.npi}</Text>
+              <Tooltip title={patient.npi} placement="top">
+                <Text code className={styles.codeElement}>{patient.npi}</Text>
+              </Tooltip>
             </div>
             <div>
               <Text type="secondary" className={styles.detailLabel}>PTAN:</Text>
@@ -341,7 +343,9 @@ const PatientList = ({ onPatientSelect, selectedPatient, chatCompletionStatus, o
             <div>
               <Text type="secondary" className={styles.detailLabel}>Medicare ID:</Text>
               <br />
-              <Text code className={styles.codeElement}>{patient.medicareId}</Text>
+              <Tooltip title={patient.medicareId} placement="top">
+                <Text code className={styles.codeElement}>{patient.medicareId}</Text>
+              </Tooltip>
             </div>
             <div>
               <Text type="secondary" className={styles.detailLabel}>DOS:</Text>

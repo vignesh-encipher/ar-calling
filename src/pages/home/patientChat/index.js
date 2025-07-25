@@ -565,7 +565,8 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
     if ('speechSynthesis' in window && window.speechSynthesis) {
       console.log('🔊 Speech synthesis available, creating utterance...');
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.9; // Slightly slower for clarity
+      utterance.rate = 1.5; // Increased speed for faster speech
+      
       utterance.pitch = 1.0;
       utterance.volume = 0.8;
 

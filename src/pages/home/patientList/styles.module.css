@@ -166,9 +166,16 @@
 .patientDetailsGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 12px 16px;
   font-size: 12px;
   color: #8c8c8c;
+  min-width: 0;
+  width: 100%;
+}
+
+.patientDetailsGrid > div {
+  min-width: 0;
+  overflow: hidden;
 }
 
 .patientDetailsGridSelected {
@@ -178,6 +185,11 @@
 /* Detail Labels */
 .detailLabel {
   color: #8c8c8c;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: block;
 }
 
 .detailLabelSelected {
@@ -187,6 +199,11 @@
 /* Detail Values */
 .detailValue {
   color: #262626;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: block;
 }
 
 .detailValueSelected {
@@ -197,6 +214,19 @@
 .codeElement {
   background-color: #f5f5f5;
   color: #595959;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: block;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.codeElement:hover {
+  background-color: #e6f7ff;
+  color: #1890ff;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
 }
 
 .codeElementSelected {

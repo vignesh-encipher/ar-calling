@@ -113,7 +113,30 @@ const NavBar = ({
         <div
           className={`d-flex align-items-center ${headerStyles.logoContainer}`}
         >
-          {/* Logs */}
+          {/* Encipher Health Logo */}
+          <div className={headerStyles.logoWrapper}>
+            <img
+              src="/footer-logo.svg"
+              alt="Encipher Health"
+              width={140}
+              height={40}
+              className={headerStyles.logo}
+              onError={(e) => {
+                console.error('Logo failed to load:', e);
+                // Fallback to text logo if image fails
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'block';
+              }}
+            />
+            {/* Fallback text logo */}
+            <div 
+              className={headerStyles.textLogo}
+              style={{ display: 'none' }}
+            >
+              <span className={headerStyles.logoText}>ENCIPHER</span>
+              <span className={headerStyles.logoTextSecondary}>HEALTH</span>
+            </div>
+          </div>
         </div>
         <div className={`${headerStyles.navitems}`}>
           <ul

@@ -56,6 +56,47 @@
 .logoContainer {
   flex-basis: 250px;
 }
+
+.logoWrapper {
+  display: flex;
+  align-items: center;
+  padding: 0 15px;
+}
+
+.logo {
+  max-width: 140px;
+  height: auto;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  transition: all 0.3s ease;
+}
+
+.logo:hover {
+  transform: scale(1.02);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+}
+
+/* Fallback text logo styles */
+.textLogo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  color: white;
+  font-family: Arial, sans-serif;
+  font-weight: bold;
+}
+
+.logoText {
+  font-size: 16px;
+  color: #7dd3fc;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.logoTextSecondary {
+  font-size: 20px;
+  color: #a855f7;
+  line-height: 1;
+}
 .profileContainer {
   display: flex;
   justify-content: flex-end;
@@ -107,8 +148,8 @@
   }
 
   .logo {
-    width: 100px;
-    height: 24px;
+    width: 140px;
+    height: 40px;
   }
   .metismenu {
     font-size: 10px;
@@ -156,8 +197,8 @@
   }
 
   .logo {
-    width: 100px;
-    height: 24px;
+    width: 120px;
+    height: 35px;
   }
 
   .metismenu {
@@ -254,7 +295,7 @@
   }
   .logo {
     width: 100px;
-    height: 24px;
+    height: 30px;
   }
   .metismenu {
     font-size: 9px;
