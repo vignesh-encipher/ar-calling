@@ -1,0 +1,396 @@
+.filesContainer {
+  padding: 0;
+  min-height: 100vh;
+  background: #f5f5f5;
+  position: relative;
+}
+
+.mainCard {
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
+  overflow: hidden;
+  background: #ffffff;
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s ease;
+  margin: 0;
+  height: 100vh;
+}
+
+.mainCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+.headerRow {
+  margin-bottom: 8px;
+  padding: 24px 24px 16px 24px;
+}
+
+.pageTitle {
+  margin: 0 !important;
+  color: #2c3e50;
+  font-weight: 700;
+  font-size: 2.5rem !important;
+  letter-spacing: -0.5px;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.uploadButton {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 12px;
+  height: 48px;
+  font-weight: 600;
+  font-size: 16px;
+  padding: 0 24px;
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+
+
+.uploadButton:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 12px 35px rgba(102, 126, 234, 0.5);
+}
+
+.uploadButton:active {
+  transform: translateY(-1px) scale(0.98);
+}
+
+.tableContainer {
+  margin-top: 16px;
+  padding: 0 24px 24px 24px;
+}
+
+.dataTable {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.dataTable .ant-table-thead > tr > th {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 2px solid #e9ecef;
+  font-weight: 700;
+  color: #2c3e50;
+  padding: 20px 16px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dataTable .ant-table-tbody > tr > td {
+  padding: 20px 16px;
+  border-bottom: 1px solid #f1f3f4;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 15px;
+}
+
+.dataTable .ant-table-tbody > tr:hover > td {
+  background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%) !important;
+  transform: scale(1.01);
+}
+
+.tableRow {
+  transition: all 0.2s ease;
+}
+
+.tableRow:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.fileNameCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.fileIcon {
+  color: #667eea;
+  font-size: 16px;
+}
+
+.reportButton {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 8px 16px;
+  height: 36px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+
+
+.reportButton:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+}
+
+.reportButton:disabled {
+  background: linear-gradient(135deg, #f5f5f5 0%, #e9ecef 100%);
+  color: #bfbfbf;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.reportButton:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Empty state styling */
+.emptyState {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6c757d;
+}
+
+.emptyIcon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.emptyTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 8px;
+}
+
+.emptyDescription {
+  font-size: 16px;
+  color: #6c757d;
+  line-height: 1.5;
+}
+
+.uploadModal {
+  border-radius: 20px;
+}
+
+.uploadModal .ant-modal-content {
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.2);
+  border: none;
+}
+
+.uploadModal .ant-modal-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-bottom: none;
+  padding: 24px 24px 20px;
+}
+
+.uploadModal .ant-modal-title {
+  color: white;
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: -0.5px;
+}
+
+.uploadModal .ant-modal-close {
+  color: white;
+  font-size: 18px;
+  transition: all 0.3s ease;
+}
+
+.uploadModal .ant-modal-close:hover {
+  color: rgba(255, 255, 255, 0.8);
+  transform: scale(1.1);
+}
+
+.uploadModal .ant-modal-body {
+  padding: 24px;
+}
+
+.uploadContent {
+  padding: 8px 0;
+}
+
+.uploadDragger {
+  border: 3px dashed #d9d9d9;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fafafa 0%, #f8f9fa 100%);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 40px 20px;
+}
+
+
+
+.uploadDragger:hover {
+  border-color: #667eea;
+  background: linear-gradient(135deg, #f0f2ff 0%, #f8f9ff 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+}
+
+.uploadDragger.ant-upload-drag-hover {
+  border-color: #667eea;
+  background: linear-gradient(135deg, #f0f2ff 0%, #f8f9ff 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+}
+
+.uploadDragger .ant-upload-drag-icon {
+  color: #667eea;
+  font-size: 56px;
+  margin-bottom: 16px;
+  transition: all 0.3s ease;
+}
+
+.uploadDragger:hover .ant-upload-drag-icon {
+  transform: scale(1.1);
+}
+
+.uploadDragger .ant-upload-text {
+  color: #2c3e50;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 12px 0 8px 0;
+  letter-spacing: -0.3px;
+}
+
+.uploadDragger .ant-upload-hint {
+  color: #6c757d;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .filesContainer {
+    padding: 16px;
+  }
+  
+  .headerRow {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start !important;
+  }
+  
+  .pageTitle {
+    font-size: 24px !important;
+  }
+  
+  .uploadButton {
+    width: 100%;
+  }
+  
+  .dataTable {
+    font-size: 14px;
+  }
+  
+  .dataTable .ant-table-thead > tr > th,
+  .dataTable .ant-table-tbody > tr > td {
+    padding: 12px 8px;
+  }
+}
+
+/* Custom scrollbar */
+.dataTable ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dataTable ::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.dataTable ::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.dataTable ::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Animation for status tags */
+.ant-tag {
+  animation: fadeIn 0.3s ease-in-out;
+  border-radius: 8px;
+  font-weight: 600;
+  padding: 4px 12px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Enhanced table animations */
+.dataTable .ant-table-tbody > tr {
+  animation: slideIn 0.4s ease-out;
+  animation-fill-mode: both;
+}
+
+.dataTable .ant-table-tbody > tr:nth-child(1) { animation-delay: 0.1s; }
+.dataTable .ant-table-tbody > tr:nth-child(2) { animation-delay: 0.2s; }
+.dataTable .ant-table-tbody > tr:nth-child(3) { animation-delay: 0.3s; }
+.dataTable .ant-table-tbody > tr:nth-child(4) { animation-delay: 0.4s; }
+.dataTable .ant-table-tbody > tr:nth-child(5) { animation-delay: 0.5s; }
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Loading animation for upload */
+.uploadButton:disabled {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  opacity: 0.7;
+  cursor: wait;
+}
+
+/* Success animation */
+@keyframes successPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.reportButton:not(:disabled):active {
+  animation: successPulse 0.3s ease-in-out;
+} 

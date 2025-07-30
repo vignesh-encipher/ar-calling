@@ -8,10 +8,10 @@ import workqueue from "../../../../assets/navbar/workqueue.webp";
 
 export const AdminMenuList = [
   {
-    title: "Patients",
-    iconStyle: patientIcon,
-    activeIcon: patientIcon,
-    to: "/home",
+    title: "Files",
+    iconStyle: reportIcon,
+    activeIcon: reportIcon,
+    to: "/files",
   },
   {
     title: "Report",

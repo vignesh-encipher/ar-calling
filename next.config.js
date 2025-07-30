@@ -5,7 +5,7 @@ const nextConfig = {
   transpilePackages: ["rc-util", "@ant-design/icons-svg"],
   devIndicators: {
     buildActivity: false,
-    buildActivityPosition: "bottom-right",
+    position: "bottom-right",
   },
   webpack: (config) => {
     config.module.rules.push({
@@ -25,6 +25,35 @@ const nextConfig = {
           {
             key: "X-Frame-Options",
             value: "DENY",
+          },
+        ],
+      },
+    ];
+  },
+
+
+
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          {
+            key: "X-Frame-Options",
+            value: "DENY",
+          },
+        ],
+      },
+      {
+        source: "/ar/:path*",
+        headers: [
+          {
+            key: "User-Agent",
+            value: "Mozilla/5.0 (compatible; NextJS-Proxy/1.0)",
+          },
+          {
+            key: "Accept",
+            value: "application/json",
           },
         ],
       },
