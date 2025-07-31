@@ -189,6 +189,12 @@ const FilesPage = () => {
     }
   };
 
+  const handleRowClick = (record) => {
+    console.log('Row clicked:', record);
+    // Navigate to patient list with batch ID
+    window.location.href = `/home?batchId=${record.key}`;
+  };
+
   const handleUpload = async () => {
     if (fileList.length === 0) {
       message.error('Please select a file to upload');
@@ -437,6 +443,10 @@ const FilesPage = () => {
             }}
             className={styles.dataTable}
             rowClassName={styles.tableRow}
+            onRow={(record) => ({
+              onClick: () => handleRowClick(record),
+              style: { cursor: 'pointer' }
+            })}
             locale={{
               emptyText: (
                 <div className={styles.emptyState}>

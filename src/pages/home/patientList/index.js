@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Input, Space, Card, Typography, Tag, Button, message, Row, Col, Tooltip } from 'antd';
-import { SearchOutlined, UserOutlined, MessageOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { SearchOutlined, UserOutlined, MessageOutlined, CheckCircleOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-
+import { useRouter } from 'next/router';
 
 import { apiService } from '../../../utils/network';
 import styles from './styles.module.css';
@@ -41,20 +41,39 @@ const dummyPatients = [
 ];
 
 const PatientList = ({ onPatientSelect, selectedPatient, chatCompletionStatus, onChatComplete }) => {
+  const router = useRouter();
+  const { batchId } = router.query;
+  
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(false);
   const [callingPatientId, setCallingPatientId] = useState(null);
 
+  // Check if router is ready and batchId is available
+  useEffect(() => {
+    if (router.isReady && batchId) {
+      console.log('✅ Router is ready, batchId available:', batchId);
+    } else if (router.isReady && !batchId) {
+      console.log('⚠️ Router is ready but no batchId found in query params');
+    } else {
+      console.log('⏳ Router is not ready yet...');
+    }
+  }, [router.isReady, batchId]);
+
   // Load patients data from real API
   useEffect(() => {
     const loadPatients = async () => {
+      if (!batchId) {
+        console.log('⚠️ No batchId available yet, waiting...');
+        return;
+      }
+      
       setLoading(true);
       
       try {
-        console.log('🔄 Fetching patients from API...');
+        console.log('🔄 Fetching patients from API for batch:', batchId);
         
-        // Call the proxy API route to avoid CORS issues
-        const response = await fetch('/api/patients', {
+        // Call the external patients API with batch ID
+        const response = await fetch(`/api/external/patients?batchId=${batchId}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json'
@@ -67,20 +86,36 @@ const PatientList = ({ onPatientSelect, selectedPatient, chatCompletionStatus, o
 
         const data = await response.json();
         console.log('📊 API Response:', data);
+        console.log('📊 API Response structure:', {
+          status: data.status,
+          message: data.message,
+          responseLength: data.response ? data.response.length : 0,
+          firstPatient: data.response && data.response[0] ? {
+            id: data.response[0].id,
+            name: `${data.response[0].patientLastName}, ${data.response[0].patientFirstName}`,
+            npi: data.response[0].npiId,
+            ptan: data.response[0].ptanId
+          } : null
+        });
 
-        // Data is already transformed by the proxy API route
-        const transformedPatients = data || [];
+        // Transform the API response to match our patient format
+        let transformedPatients = [];
+        if (data.status === 'SUCCESS' && data.response) {
+          transformedPatients = data.response.map((patient, index) => ({
+            key: patient.id || patient.patientId || index.toString(),
+            patientName: `${patient.patientLastName || ''}, ${patient.patientFirstName || ''}`.trim() || `Patient ${index + 1}`,
+            npi: patient.npiId || patient.npi || 'N/A',
+            ptan: patient.ptanId || patient.ptan || 'N/A',
+            tin: patient.tinId || patient.tin || 'N/A',
+            medicareId: patient.medicareId || patient.medicare_id || 'N/A',
+            dos: patient.dos || patient.dateOfService || 'N/A',
+            dob: patient.dob || patient.dateOfBirth || 'N/A',
+            status: patient.status || 'active',
+            chatCompleted: patient.chatCompleted || false
+          }));
+        }
 
         setPatients(transformedPatients);
-        
-        // Initialize chat completion status
-        const initialStatus = {};
-        transformedPatients.forEach(patient => {
-          if (patient && patient.key) {
-            initialStatus[patient.key] = patient.chatCompleted || false;
-            onChatComplete(patient.key, patient.chatCompleted || false);
-          }
-        });
         
         console.log('✅ Loaded patients from API:', transformedPatients.length);
         message.success(`Loaded ${transformedPatients.length} patients successfully`);
@@ -92,14 +127,6 @@ const PatientList = ({ onPatientSelect, selectedPatient, chatCompletionStatus, o
         console.log('⚠️ API failed, falling back to dummy data...');
         setPatients(dummyPatients);
         
-        const initialStatus = {};
-        dummyPatients.forEach(patient => {
-          if (patient && patient.key) {
-            initialStatus[patient.key] = patient.chatCompleted || false;
-            onChatComplete(patient.key, patient.chatCompleted || false);
-          }
-        });
-        
         message.warning('Using dummy data (API unavailable)');
       } finally {
         setLoading(false);
@@ -107,11 +134,32 @@ const PatientList = ({ onPatientSelect, selectedPatient, chatCompletionStatus, o
     };
 
     loadPatients();
-  }, []);
+  }, [batchId, router.isReady]);
+
+  // Initialize chat completion status when patients change
+  useEffect(() => {
+    if (patients.length > 0) {
+      patients.forEach(patient => {
+        if (patient && patient.key) {
+          onChatComplete(patient.key, patient.chatCompleted || false);
+        }
+      });
+    }
+  }, [patients]);
 
   // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return '-';
+    
+    // Handle API date format (MMDDYYYY)
+    if (dateString.length === 8 && /^\d{8}$/.test(dateString)) {
+      const month = dateString.substring(0, 2);
+      const day = dateString.substring(2, 4);
+      const year = dateString.substring(4, 8);
+      return `${month}/${day}/${year}`;
+    }
+    
+    // Handle other date formats
     return dayjs(dateString).format('MM/DD/YYYY');
   };
 
@@ -241,17 +289,26 @@ const PatientList = ({ onPatientSelect, selectedPatient, chatCompletionStatus, o
   };
 
   // Manual retry function
+  const handleBackToFiles = () => {
+    router.push('/files');
+  };
+
   const handleRetry = () => {
+    if (!batchId) {
+      message.error('No batch ID available. Please check the URL and try again.');
+      return;
+    }
+    
     setLoading(true);
     setPatients([]);
     
     setTimeout(() => {
       const loadPatients = async () => {
         try {
-          console.log('🔄 Retrying API call...');
+          console.log('🔄 Retrying API call for batch:', batchId);
           
-          // Call the proxy API route to avoid CORS issues
-          const response = await fetch('/api/patients', {
+          // Call the external patients API with batch ID
+          const response = await fetch(`/api/external/patients?batchId=${batchId}`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json'
@@ -264,18 +321,36 @@ const PatientList = ({ onPatientSelect, selectedPatient, chatCompletionStatus, o
 
           const data = await response.json();
           console.log('📊 Retry API Response:', data);
+          console.log('📊 Retry API Response structure:', {
+            status: data.status,
+            message: data.message,
+            responseLength: data.response ? data.response.length : 0,
+            firstPatient: data.response && data.response[0] ? {
+              id: data.response[0].id,
+              name: `${data.response[0].patientLastName}, ${data.response[0].patientFirstName}`,
+              npi: data.response[0].npiId,
+              ptan: data.response[0].ptanId
+            } : null
+          });
 
-          // Data is already transformed by the proxy API route
-          const transformedPatients = data || [];
+          // Transform the API response to match our patient format
+          let transformedPatients = [];
+          if (data.status === 'SUCCESS' && data.response) {
+            transformedPatients = data.response.map((patient, index) => ({
+              key: patient.id || patient.patientId || index.toString(),
+              patientName: `${patient.patientLastName || ''}, ${patient.patientFirstName || ''}`.trim() || `Patient ${index + 1}`,
+              npi: patient.npiId || patient.npi || 'N/A',
+              ptan: patient.ptanId || patient.ptan || 'N/A',
+              tin: patient.tinId || patient.tin || 'N/A',
+              medicareId: patient.medicareId || patient.medicare_id || 'N/A',
+              dos: patient.dos || patient.dateOfService || 'N/A',
+              dob: patient.dob || patient.dateOfBirth || 'N/A',
+              status: patient.status || 'active',
+              chatCompleted: patient.chatCompleted || false
+            }));
+          }
 
           setPatients(transformedPatients);
-          
-          // Initialize chat completion status
-          transformedPatients.forEach(patient => {
-            if (patient && patient.key) {
-              onChatComplete(patient.key, patient.chatCompleted || false);
-            }
-          });
           
           message.success(`Retry successful! Loaded ${transformedPatients.length} patients`);
           
@@ -284,12 +359,6 @@ const PatientList = ({ onPatientSelect, selectedPatient, chatCompletionStatus, o
           
           // Fallback to dummy data
           setPatients(dummyPatients);
-          
-          dummyPatients.forEach(patient => {
-            if (patient && patient.key) {
-              onChatComplete(patient.key, patient.chatCompleted || false);
-            }
-          });
           
           message.warning('Retry failed, using dummy data');
         } finally {
@@ -388,9 +457,19 @@ const PatientList = ({ onPatientSelect, selectedPatient, chatCompletionStatus, o
         borderBottom: '1px solid #e8e8e8',
         backgroundColor: '#fafafa'
       }}>
-        <Title level={4} style={{ margin: 0, color: '#04306f' }}>
-          Patient List ({patients.length} patients)
-        </Title>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+          <Button 
+            icon={<ArrowLeftOutlined />} 
+            onClick={handleBackToFiles}
+            style={{ marginRight: '12px' }}
+            size="small"
+          >
+            Back to Files
+          </Button>
+          <Title level={4} style={{ margin: 0, color: '#04306f' }}>
+            Patient List - Batch {router.isReady ? batchId : '...'} ({patients.length} patients)
+          </Title>
+        </div>
         <Text type="secondary" style={{ fontSize: '12px' }}>
           Click "Call" to start chatting with a patient
         </Text>
@@ -398,7 +477,7 @@ const PatientList = ({ onPatientSelect, selectedPatient, chatCompletionStatus, o
 
       {/* Patient List Content */}
       <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
-        {loading ? (
+        {!router.isReady || loading ? (
           <div style={{ textAlign: 'center', padding: '40px' }}>
             <div className="ant-spin ant-spin-lg ant-spin-spinning">
               <span className="ant-spin-dot ant-spin-dot-spin">
@@ -409,7 +488,9 @@ const PatientList = ({ onPatientSelect, selectedPatient, chatCompletionStatus, o
               </span>
             </div>
             <br />
-            <Text type="secondary">Loading patients...</Text>
+            <Text type="secondary">
+              {!router.isReady ? 'Initializing...' : 'Loading patients...'}
+            </Text>
           </div>
         ) : patients.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px' }}>
@@ -417,10 +498,10 @@ const PatientList = ({ onPatientSelect, selectedPatient, chatCompletionStatus, o
               <UserOutlined style={{ fontSize: '48px', color: '#d9d9d9' }} />
             </div>
             <Text type="secondary" style={{ fontSize: '16px', display: 'block', marginBottom: '8px' }}>
-              No patients available.
+              {!batchId ? 'No batch ID found in URL.' : 'No patients available.'}
             </Text>
             <Text type="secondary" style={{ fontSize: '14px', display: 'block', marginBottom: '16px' }}>
-              Please check your connection or try again later.
+              {!batchId ? 'Please check the URL and try again.' : 'Please check your connection or try again later.'}
             </Text>
             <Button 
               type="primary" 
