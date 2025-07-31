@@ -14,6 +14,8 @@ class SocketService {
 
   // Connect to WebSocket server with callSid
   connect(callSid) {
+    console.log('🔌 SocketService.connect called with callSid:', callSid);
+    
     if (this.socket && this.isConnected) {
       console.log('🔌 Already connected to WebSocket');
       return Promise.resolve();
@@ -24,12 +26,24 @@ class SocketService {
         // Use real socket API with call ID
         const wsUrl = `${API_ENDPOINTS.WEBSOCKET}?callSid=${callSid}`;
         console.log('🔌 Connecting to real WebSocket:', wsUrl);
+        console.log('🔌 CallSid being used:', callSid);
+        console.log('🔌 WebSocket endpoint:', API_ENDPOINTS.WEBSOCKET);
         
         this.callSid = callSid;
         this.socket = new WebSocket(wsUrl);
         
+        // Add connection timeout
+        const connectionTimeout = setTimeout(() => {
+          if (this.socket.readyState === WebSocket.CONNECTING) {
+            console.error('❌ WebSocket connection timeout');
+            this.socket.close();
+            reject(new Error('WebSocket connection timeout'));
+          }
+        }, 10000); // 10 second timeout
+        
         this.socket.onopen = () => {
           console.log('✅ WebSocket connected successfully');
+          clearTimeout(connectionTimeout);
           this.isConnected = true;
           this.reconnectAttempts = 0;
           this.notifyConnectionHandlers('connected');
@@ -40,13 +54,17 @@ class SocketService {
           try {
             const message = JSON.parse(event.data);
             console.log('📨 Received WebSocket message:', message);
+            console.log('📨 Message type:', message.messageType);
+            console.log('📨 Available handlers:', Array.from(this.messageHandlers.keys()));
             
             // Handle messages with messageType field
             if (message.messageType) {
               // Route based on messageType
               const handlers = this.messageHandlers.get(message.messageType) || [];
+              console.log('📨 Found handlers for messageType:', message.messageType, 'Count:', handlers.length);
               handlers.forEach(handler => {
                 try {
+                  console.log('📨 Calling handler for messageType:', message.messageType);
                   handler(message);
                 } catch (error) {
                   console.error('❌ Error in messageType handler:', error);
@@ -74,6 +92,14 @@ class SocketService {
 
         this.socket.onerror = (error) => {
           console.error('❌ WebSocket error:', error);
+          console.error('❌ WebSocket error details:', {
+            readyState: this.socket.readyState,
+            url: this.socket.url,
+            callSid: callSid
+          });
+          
+          // Try to fallback to mock socket if real socket fails
+          console.log('⚠️ Real WebSocket failed, trying mock socket...');
           this.notifyConnectionHandlers('error', error);
           reject(error);
         };

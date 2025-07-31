@@ -34,7 +34,7 @@ export default function Home() {
   // }, [instance, accounts, inProgress, router]);
 
   useEffect(() => {
-    router.push("/home");
+    router.push("/files");
   }, []);
 
   return <PageLoading />;

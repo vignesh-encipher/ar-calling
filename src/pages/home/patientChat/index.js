@@ -44,32 +44,25 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [socketConnected, setSocketConnected] = useState(false);
   const [callStatus, setCallStatus] = useState('idle'); // idle, connecting, connected, failed
-  const [voiceEnabled, setVoiceEnabled] = useState(true); // Voice/speech toggle - enabled by default
+  // const [voiceEnabled, setVoiceEnabled] = useState(true); // Voice/speech toggle - enabled by default
   const [isInitialized, setIsInitialized] = useState(false); // Track if socket is already initialized
   const [handlersRegistered, setHandlersRegistered] = useState(false); // Track if handlers are registered
   const [processedMessageIds, setProcessedMessageIds] = useState(new Set()); // Track processed message IDs
-  const [currentlySpeakingId, setCurrentlySpeakingId] = useState(null);
-  const [currentWordIndex, setCurrentWordIndex] = useState(0);
-  const [speakingMessageText, setSpeakingMessageText] = useState('');
+  // const [currentlySpeakingId, setCurrentlySpeakingId] = useState(null);
+  // const [currentWordIndex, setCurrentWordIndex] = useState(0);
+  // const [speakingMessageText, setSpeakingMessageText] = useState('');
 
-  // Debug voice state and check speech synthesis
-  useEffect(() => {
-    console.log('🔊 Voice enabled state:', voiceEnabled);
-
-    // Check if speech synthesis is available
-    if ('speechSynthesis' in window && window.speechSynthesis) {
-      console.log('🔊 Speech synthesis is available');
-      const voices = window.speechSynthesis.getVoices();
-      console.log('🔊 Available voices:', voices.length);
-      voices.forEach(voice => {
-        console.log(`🔊 Voice: ${voice.name} (${voice.lang})`);
-      });
-    } else {
-      console.warn('🔊 Speech synthesis not available');
-    }
-  }, [voiceEnabled]);
-  const [isListening, setIsListening] = useState(false); // Speech recognition state
-  const [speechRecognition, setSpeechRecognition] = useState(null); // Speech recognition instance
+  // Voice state initialization - COMMENTED OUT
+  // useEffect(() => {
+  //   // Check if speech synthesis is available
+  //   if ('speechSynthesis' in window && window.speechSynthesis) {
+  //     // Speech synthesis available
+  //   } else {
+  //     console.warn('🔊 Speech synthesis not available');
+  //   }
+  // }, [voiceEnabled]);
+  // const [isListening, setIsListening] = useState(false); // Speech recognition state
+  // const [speechRecognition, setSpeechRecognition] = useState(null); // Speech recognition instance
 
   const messagesEndRef = useRef(null);
   const [chatHistory, setChatHistory] = useState([]);
@@ -91,24 +84,45 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
   // Load chat history when patient is selected
   useEffect(() => {
     const connectToSocket = async () => {
-      if (selectedPatient && !isInitialized) {
+      if (selectedPatient) {
+        // Clear previous chat messages immediately
+        setMessages([]);
+        setNewMessage(''); // Clear input field
+        setLoading(true);
+        setIsTyping(false); // Clear typing state
+        // setCurrentlySpeakingId(null); // Clear speaking state - COMMENTED OUT
+        // setCurrentWordIndex(0); // Reset word index - COMMENTED OUT
+        // setSpeakingMessageText(''); // Clear speaking text - COMMENTED OUT
+        
         // Reset handlers for new patient
         setHandlersRegistered(false);
         setProcessedMessageIds(new Set()); // Reset processed message IDs for new patient
         processedMessageIdsRef.current.clear(); // Reset ref as well
+        setIsInitialized(false); // Reset initialization flag for new patient
 
-        loadChatHistory(selectedPatient.key);
+        // Disconnect from previous socket if connected to different patient
+        const currentConnectionStatus = socketService.getConnectionStatus();
+        if (currentConnectionStatus.isConnected && currentConnectionStatus.callSid !== selectedPatient.callId) {
+          socketService.disconnect();
+          setSocketConnected(false);
+          setCallStatus('connecting');
+        }
+
+        // Check if patient has chat history data
+        if (selectedPatient.chatHistory && selectedPatient.chatHistory.length > 0) {
+          loadChatHistoryFromData(selectedPatient.chatHistory);
+        } else {
+          loadChatHistory(selectedPatient.key);
+        }
         checkChatCompletionStatus(selectedPatient.key);
         setupSocketHandlers();
 
         // Check if socket is already connected from patientList
         const connectionStatus = socketService.getConnectionStatus();
-        if (connectionStatus === 'connected') {
-          console.log('📞 Patient selected, socket already connected');
+        if (connectionStatus.isConnected && connectionStatus.callSid === selectedPatient.callId) {
           setSocketConnected(true);
           setCallStatus('connected');
         } else {
-          console.log('📞 Patient selected, waiting for socket connection...');
           setCallStatus('connecting');
         }
 
@@ -118,7 +132,14 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
     };
 
     connectToSocket();
-  }, [selectedPatient, isInitialized]);
+  }, [selectedPatient]);
+
+  // Cleanup socket connection when component unmounts
+  useEffect(() => {
+    return () => {
+      socketService.disconnect();
+    };
+  }, []);
 
 
 
@@ -126,12 +147,8 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
   const setupSocketHandlers = () => {
     // Prevent multiple registrations
     if (handlersRegistered) {
-      console.log('⚠️ Handlers already registered, skipping...');
       return;
     }
-
-    console.log('🔌 Setting up WebSocket handlers...');
-    console.log('🔍 Current handlersRegistered state:', handlersRegistered);
 
     // Clear existing handlers first to prevent duplicates
     activeService.offMessage('chat');
@@ -141,8 +158,6 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
     activeService.offMessage('call_status');
     activeService.offMessage('Message received');
     activeService.offMessage('Typing');
-
-    console.log('🧹 Cleared existing handlers');
 
     // Register message handlers for different message types
     activeService.onMessage('chat', handleSocketMessage);
@@ -166,9 +181,6 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
       if (status === 'connected') {
         setCallStatus('connected');
         setLoading(false);
-
-        // Call connected successfully
-        console.log('📞 Call connected successfully');
       } else if (status === 'disconnected') {
         setCallStatus('failed');
         setLoading(false);
@@ -179,29 +191,16 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
     });
 
     setHandlersRegistered(true);
-    console.log('✅ WebSocket handlers registered successfully');
   };
 
   // Handle socket messages
   const handleSocketMessage = (message) => {
-    console.log('💬 Received chat message:', message);
-    console.log('🔍 Current processedMessageIds size:', processedMessageIds.size);
-    console.log('🔍 Current messages count:', messages.length);
-
     // Use the unique ID from backend for duplicate detection
     const backendMessageId = message.id;
-    const senderName = message.name || message.sender?.name;
-    const messageText = message.text?.trim();
-
-    console.log('🔍 Backend message ID:', backendMessageId);
-    console.log('🔍 Sender name:', senderName);
-    console.log('🔍 Message text:', messageText);
+    const messageText = message.message?.trim() || message.text?.trim();
 
     // Check if we've already processed this exact message using backend ID
     if (processedMessageIdsRef.current.has(backendMessageId)) {
-      console.log('⚠️ Duplicate message detected (already processed), skipping:', messageText);
-      console.log('⚠️ Backend message ID:', backendMessageId);
-      console.log('⚠️ Processed message IDs count:', processedMessageIdsRef.current.size);
       return;
     }
 
@@ -209,18 +208,12 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
     const existingMessage = messages.find(msg => msg.id === backendMessageId);
 
     if (existingMessage) {
-      console.log('⚠️ Duplicate message detected (in state), skipping:', messageText);
-      console.log('⚠️ Existing message ID:', existingMessage.id);
-      console.log('⚠️ Backend message ID:', backendMessageId);
-      console.log('⚠️ Total messages in state:', messages.length);
       return;
     }
 
     // Immediately mark as processed to prevent race conditions (using ref)
     processedMessageIdsRef.current.add(backendMessageId);
     setProcessedMessageIds(prev => new Set([...prev, backendMessageId]));
-    console.log('✅ Marked message as processed:', backendMessageId);
-    console.log('✅ New processedMessageIds size:', processedMessageIdsRef.current.size);
 
     // Use the backend message ID directly
     const messageId = backendMessageId;
@@ -228,23 +221,30 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
     // Handle different message formats from WebSocket
     if (message.messageType === 'Message received') {
       // Only add message if it has content
-      if (message.text && message.text.trim()) {
+      if (messageText) {
         try {
+          // Determine sender name based on bot type
+          let senderName = 'Unknown';
+          if (message.bot === 'ivr') {
+            senderName = 'IVR SYSTEM';
+          } else if (message.bot === 'ar') {
+            senderName = 'EH BOT';
+          } else {
+            senderName = message.name || 'Unknown';
+          }
+
           const chatMessage = {
             id: messageId,
-            text: message.text.trim(),
+            text: messageText,
             sender: {
-              name: message.name // Backend sends "you" but we'll display as "EH BOT" in UI
+              name: senderName
             },
             timestamp: new Date().toISOString()
           };
-          console.log('📝 Processing message:', chatMessage);
-          console.log('🔍 Message sender:', chatMessage.sender.name);
 
-          // For ALL bot messages (IVR, IVR SYSTEM and "you" from backend), add to display queue and speak
-          if (chatMessage.sender.name === 'you' || chatMessage.sender.name === 'IVR SYSTEM' || chatMessage.sender.name === 'IVR') {
-            console.log('🔊 Adding bot message to voice queue:', chatMessage.sender.name);
-            addMessageToDisplayQueue(chatMessage);
+          // For ALL bot messages (IVR, IVR SYSTEM and "you" from backend), display immediately
+          if (chatMessage.sender.name === 'IVR SYSTEM' || chatMessage.sender.name === 'EH BOT') {
+            setMessages(prev => [...prev, chatMessage]);
           } else {
             // For non-bot messages, display immediately
             setMessages(prev => [...prev, chatMessage]);
@@ -252,42 +252,32 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
         } catch (error) {
           console.error('❌ Error processing message:', error);
         }
-      } else {
-        console.log('⚠️ Skipping empty message from:', message.name);
       }
     } else if (message.type === 'chat') {
       // Handle standard chat format
-      if (message.text && message.text.trim()) {
+      if (messageText) {
         const processedMessage = {
           ...message,
           id: messageId,
-          text: message.text.trim(),
+          text: messageText,
           sender: {
             ...message.sender,
             name: message.sender.name
           }
         };
 
-        // For ALL bot messages, add to voice queue
+        // For ALL bot messages, display immediately
         if (processedMessage.sender.name === 'you' || processedMessage.sender.name === 'IVR SYSTEM' || processedMessage.sender.name === 'IVR') {
-          console.log('🔊 Adding bot message to voice queue:', processedMessage.sender.name);
-          addMessageToDisplayQueue(processedMessage);
+          setMessages(prev => [...prev, processedMessage]);
         } else {
           setMessages(prev => [...prev, processedMessage]);
         }
-      } else {
-        console.log('⚠️ Skipping empty chat message from:', message.sender?.name);
       }
-    } else {
-      // Handle other message types
-      console.log('📨 Other message type:', message);
     }
   };
 
   // Handle typing messages
   const handleTypingMessage = (message) => {
-    console.log('⌨️ Received typing indicator:', message);
-
     if (message.messageType === 'Typing') {
       // Handle WebSocket typing format - only show for IVR
       if (message.name === 'IVR') {
@@ -305,7 +295,6 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
 
   // Handle history messages
   const handleHistoryMessage = (message) => {
-    console.log('📚 Received chat history:', message);
     if (message.messages && Array.isArray(message.messages)) {
       setMessages(message.messages);
       setLoading(false);
@@ -313,19 +302,17 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
       setMessages(message.data);
       setLoading(false);
     } else {
-      console.log('📚 No valid messages in history response');
       setLoading(false);
     }
   };
 
   // Handle system messages
   const handleSystemMessage = (message) => {
-    console.log('System message:', message);
+    // System message handling
   };
 
   // Handle call status messages
   const handleCallStatusMessage = (message) => {
-    console.log('📞 Call status update:', message);
     setCallStatus(message.status || 'connected');
   };
 
@@ -333,7 +320,50 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
   const loadChatHistory = async (patientId) => {
     setLoading(true);
     setMessages([]); // Start with empty messages, wait for WebSocket data
-    console.log('🔄 Waiting for WebSocket chat history...');
+  };
+
+  // Load chat history from API data
+  const loadChatHistoryFromData = (chatData) => {
+    setLoading(true);
+    setMessages([]); // Clear existing messages
+    
+    const formattedMessages = chatData.map((chatItem, index) => {
+      const isBot = chatItem.bot === 'ivr' || chatItem.bot === 'ar';
+      const senderName = chatItem.bot === 'ivr' ? 'IVR SYSTEM' : 
+                        chatItem.bot === 'ar' ? 'EH BOT' : 'Unknown';
+      
+      return {
+        id: `history-${index}`,
+        text: chatItem.message,
+        sender: { name: senderName },
+        timestamp: new Date().toISOString(), // Use current time for history
+        isHistory: true
+      };
+    });
+    
+
+    setMessages(formattedMessages);
+    setLoading(false);
+    
+    // Connect to socket for real-time updates if callId is available
+    if (selectedPatient && selectedPatient.callId) {
+      try {
+        socketService.connect(selectedPatient.callId).then(() => {
+          setSocketConnected(true);
+          setCallStatus('connected');
+        }).catch((error) => {
+          console.error('❌ Socket connection failed for chat history:', error);
+          // Continue without real-time updates
+        });
+      } catch (error) {
+        console.error('❌ Error connecting to socket for chat history:', error);
+      }
+    }
+    
+    // Mark chat as completed since we have history
+    if (selectedPatient) {
+      onChatComplete(selectedPatient.key, true);
+    }
   };
 
   // Check chat completion status (no dummy data)
@@ -369,8 +399,6 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
       };
       setMessages(prev => [...prev, localMessage]);
       setNewMessage('');
-    } else {
-      console.log('Failed to send message');
     }
   };
 
@@ -471,391 +499,321 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
     }
   };
 
-  // Initialize speech recognition
-  useEffect(() => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
+  // Initialize speech recognition - COMMENTED OUT
+  // useEffect(() => {
+  //   if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+  //     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  //     const recognition = new SpeechRecognition();
 
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
+  //     recognition.continuous = false;
+  //     recognition.interimResults = false;
+  //     recognition.lang = 'en-US';
 
-      recognition.onstart = () => {
-        setIsListening(true);
-        console.log('🎤 Speech recognition started');
-      };
+  //     recognition.onstart = () => {
+  //       setIsListening(true);
+  
+  //     };
 
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        console.log('🎤 Speech recognized:', transcript);
-        setNewMessage(transcript);
-        setIsListening(false);
+  //     recognition.onresult = (event) => {
+  //       const transcript = event.results[0][0].transcript;
 
-        // Auto-send the message after speech recognition
-        setTimeout(() => {
-          sendMessage();
-        }, 500);
-      };
+  //       setNewMessage(transcript);
+  //       setIsListening(false);
 
-      recognition.onerror = (event) => {
-        console.error('🎤 Speech recognition error:', event.error);
-        setIsListening(false);
-      };
+  //       // Auto-send the message after speech recognition
+  //       setTimeout(() => {
+  //         sendMessage();
+  //       }, 500);
+  //     };
 
-      recognition.onend = () => {
-        setIsListening(false);
-        console.log('🎤 Speech recognition ended');
-      };
+  //     recognition.onerror = (event) => {
+  //       console.error('🎤 Speech recognition error:', event.error);
+  //       setIsListening(false);
+  //     };
 
-      setSpeechRecognition(recognition);
-    } else {
-      console.warn('🎤 Speech recognition not supported');
-    }
-  }, []);
+  //     recognition.onend = () => {
+  //       setIsListening(false);
+
+  //     };
+
+  //     setSpeechRecognition(recognition);
+  //   } else {
+  //     console.warn('🎤 Speech recognition not supported');
+  //   }
+  // }, []);
 
   // Voice and display queue system - wait for current speech to complete
-  const voiceQueue = useRef([]);
-  const displayQueue = useRef([]);
-  const isSpeaking = useRef(false);
-  const spokenMessages = useRef(new Set());
+  // const voiceQueue = useRef([]); // COMMENTED OUT
+  // const displayQueue = useRef([]); // COMMENTED OUT
+  // const isSpeaking = useRef(false); // COMMENTED OUT
+  // const spokenMessages = useRef(new Set()); // COMMENTED OUT
 
-  // Add message to display queue and start speech
-  const addMessageToDisplayQueue = (chatMessage) => {
-    console.log(`🔊 Adding message to voice queue: ${chatMessage.sender.name} - "${chatMessage.text}"`);
-    console.log(`🔊 Voice enabled: ${voiceEnabled}`);
-    console.log(`🔊 Current speaking state: ${isSpeaking.current}`);
-    console.log(`🔊 Current voice queue length: ${voiceQueue.current.length}`);
+  // Add message to display queue and start speech - COMMENTED OUT
+  // const addMessageToDisplayQueue = (chatMessage) => {
+  //   // Check if this message is already in the queue to prevent duplicates
+  //   const isAlreadyInQueue = voiceQueue.current.some(item => item.messageId === chatMessage.id);
+  //   if (isAlreadyInQueue) {
+  //     return;
+  //   }
 
-    // Check if this message is already in the queue to prevent duplicates
-    const isAlreadyInQueue = voiceQueue.current.some(item => item.messageId === chatMessage.id);
-    if (isAlreadyInQueue) {
-      console.log(`⚠️ Message already in queue, skipping: ${chatMessage.id}`);
-      return;
-    }
+  //   // Add to voice queue only if voice is enabled
+  //   if (voiceEnabled) {
+  //     // Add to display queue (will be shown when speech starts)
+  //     displayQueue.current.push(chatMessage);
 
-    // Add to voice queue only if voice is enabled
-    if (voiceEnabled) {
-      // Add to display queue (will be shown when speech starts)
-      displayQueue.current.push(chatMessage);
+  //     // Add to voice queue
+  //     voiceQueue.current.push({
+  //       text: chatMessage.text,
+  //       sender: chatMessage.sender.name,
+  //       messageId: chatMessage.id
+  //     });
 
-      // Add to voice queue
-      voiceQueue.current.push({
-        text: chatMessage.text,
-        sender: chatMessage.sender.name,
-        messageId: chatMessage.id
-      });
+  //     // Start processing if not currently speaking
+  //     if (!isSpeaking.current) {
+  //       processVoiceQueue();
+  //     }
+  //   } else {
+  //     // If voice is disabled, just display the message immediately
+  //     setMessages(prev => [...prev, chatMessage]);
+  //   }
+  // };
 
-      console.log(`🔊 Voice queue length: ${voiceQueue.current.length}`);
-      console.log(`🔊 Display queue length: ${displayQueue.current.length}`);
+  // Process voice queue and display messages - COMMENTED OUT
+  // const processVoiceQueue = () => {
+  //   if (voiceQueue.current.length === 0 || isSpeaking.current) {
+  //     return;
+  //   }
 
-      // Start processing if not currently speaking
-      if (!isSpeaking.current) {
-        console.log('🔊 Starting voice queue processing...');
-        processVoiceQueue();
-      } else {
-        console.log('🔊 Voice queue processing already in progress...');
-      }
-    } else {
-      // If voice is disabled, just display the message immediately
-      console.log('🔊 Voice disabled, displaying message immediately');
-      setMessages(prev => [...prev, chatMessage]);
-    }
-  };
+  //   // Cancel any existing speech to prevent duplicates
+  //   if (window.speechSynthesis) {
+  //     window.speechSynthesis.cancel();
+  //   }
 
-  // Process voice queue and display messages
-  const processVoiceQueue = () => {
-    if (voiceQueue.current.length === 0 || isSpeaking.current) {
-      return;
-    }
+  //   const { text, sender, messageId } = voiceQueue.current.shift();
+  //   isSpeaking.current = true;
 
-    // Cancel any existing speech to prevent duplicates
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-
-    const { text, sender, messageId } = voiceQueue.current.shift();
-    isSpeaking.current = true;
-
-    // Display the message now
-    const messageToDisplay = displayQueue.current.shift();
-    if (messageToDisplay) {
-      setMessages(prev => [...prev, messageToDisplay]);
-      console.log(`📝 Displayed message: ${sender}`);
+  //   // Display the message now
+  //   const messageToDisplay = displayQueue.current.shift();
+  //   if (messageToDisplay) {
+  //     setMessages(prev => [...prev, messageToDisplay]);
       
-      // Set up word highlighting for this message
-      setCurrentlySpeakingId(messageToDisplay.id);
-      setSpeakingMessageText(text);
-      setCurrentWordIndex(0);
-    }
+  //     // Set up word highlighting for this message
+  //     setCurrentlySpeakingId(messageToDisplay.id);
+  //     setSpeakingMessageText(text);
+  //     setCurrentWordIndex(0);
+  //   }
 
-    if ('speechSynthesis' in window && window.speechSynthesis) {
-      console.log('🔊 Speech synthesis available, creating utterance...');
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.3; // Slightly faster speech
+  //   if ('speechSynthesis' in window && window.speechSynthesis) {
+  //     const utterance = new SpeechSynthesisUtterance(text);
+  //     utterance.rate = 1.3; // Slightly faster speech
       
-      utterance.pitch = 1.0;
-      utterance.volume = 0.8;
+  //     utterance.pitch = 1.0;
+  //     utterance.volume = 0.8;
 
-      // Use different voices for different senders
-      const voices = window.speechSynthesis.getVoices();
-      let selectedVoice = null;
+  //     // Use different voices for different senders
+  //     const voices = window.speechSynthesis.getVoices();
+  //     let selectedVoice = null;
 
-      // Use male voice for both IVR and EH BOT ("you")
-      if (sender === 'EH BOT' || sender === 'you' || sender === 'IVR SYSTEM' || sender === 'IVR') {
-        // Try to use a male voice for both systems
-        selectedVoice = voices.find(voice =>
-          voice.name.includes('Male') ||
-          voice.name.includes('Alex') ||
-          voice.name.includes('David') ||
-          voice.name.includes('Google UK English Male') ||
-          voice.name.includes('Microsoft David')
-        );
-      }
+  //     // Use male voice for both IVR and EH BOT ("you")
+  //     if (sender === 'EH BOT' || sender === 'you' || sender === 'IVR SYSTEM' || sender === 'IVR') {
+  //       // Try to use a male voice for both systems
+  //       selectedVoice = voices.find(voice =>
+  //         voice.name.includes('Male') ||
+  //         voice.name.includes('Alex') ||
+  //         voice.name.includes('David') ||
+  //         voice.name.includes('Google UK English Male') ||
+  //         voice.name.includes('Microsoft David')
+  //       );
+  //     }
 
-      if (selectedVoice) {
-        utterance.voice = selectedVoice;
-      }
+  //     if (selectedVoice) {
+  //       utterance.voice = selectedVoice;
+  //     }
 
-      // Word boundary event for real-time word highlighting
-      utterance.onboundary = (event) => {
-        console.log('🔊 Boundary event triggered:', event.name, 'charIndex:', event.charIndex);
-        
-        if (event.name === 'word') {
-          const words = text.split(/\s+/).filter(word => word.length > 0);
-          const charIndex = event.charIndex;
+  //     // Word boundary event for real-time word highlighting
+  //     utterance.onboundary = (event) => {
+  //       if (event.name === 'word') {
+  //         const words = text.split(/\s+/).filter(word => word.length > 0);
+  //         const charIndex = event.charIndex;
           
-          console.log('🔊 Words array:', words);
-          console.log('🔊 Current charIndex:', charIndex);
+  //         // Improved word index calculation that handles gaps better
+  //         let wordIndex = 0;
+  //         let charCount = 0;
+  //         let wordStart = 0;
           
-          // Improved word index calculation that handles gaps better
-          let wordIndex = 0;
-          let charCount = 0;
-          let wordStart = 0;
+  //         // Find the word that contains the current character position
+  //         for (let i = 0; i < words.length; i++) {
+  //           const wordLength = words[i].length;
+  //           const wordEnd = wordStart + wordLength;
           
-          // Find the word that contains the current character position
-          for (let i = 0; i < words.length; i++) {
-            const wordLength = words[i].length;
-            const wordEnd = wordStart + wordLength;
-            
-            console.log(`🔊 Word ${i}: "${words[i]}" (chars ${wordStart}-${wordEnd})`);
-            
-            if (charIndex >= wordStart && charIndex < wordEnd) {
-              wordIndex = i;
-              break;
-            }
-            
-            // Move to next word position (account for spaces and punctuation)
-            wordStart = wordEnd;
-            
-            // Skip spaces and punctuation until we find the next word
-            while (wordStart < text.length && /\s/.test(text[wordStart])) {
-              wordStart++;
-            }
-          }
+  //           if (charIndex >= wordStart && charIndex < wordEnd) {
+  //             wordIndex = i;
+  //             break;
+  //           }
           
-          // Update word index if within bounds
-          if (wordIndex >= 0 && wordIndex < words.length) {
-            setCurrentWordIndex(wordIndex);
-            console.log(`🔊 Speaking word ${wordIndex + 1}/${words.length}: "${words[wordIndex]}"`);
-            console.log(`🔊 Current word index state: ${wordIndex}`);
-            
-            // If boundary events are working, disable manual highlighting
-            if (utterance.testInterval) {
-              clearInterval(utterance.testInterval);
-              utterance.testInterval = null;
-              console.log(`🔊 Disabled manual highlighting - boundary events working`);
-            }
-          } else {
-            console.log(`🔊 Word index out of bounds: ${wordIndex}, words length: ${words.length}`);
-          }
-        }
-      };
+  //           // Move to next word position (account for spaces and punctuation)
+  //           wordStart = wordEnd;
+          
+  //           // Skip spaces and punctuation until we find the next word
+  //           while (wordStart < text.length && /\s/.test(text[wordStart])) {
+  //             wordStart++;
+  //           }
+  //         }
+          
+  //         // Update word index if within bounds
+  //         if (wordIndex >= 0 && wordIndex < words.length) {
+  //           setCurrentWordIndex(wordIndex);
+          
+  //           // If boundary events are working, disable manual highlighting
+  //           if (utterance.testInterval) {
+  //             clearInterval(utterance.testInterval);
+  //             utterance.testInterval = null;
+  //           }
+  //         }
+  //       }
+  //     };
 
-      utterance.onstart = () => {
-        console.log(`🔊 Speaking (${sender}):`, text);
-        
-        // Calculate estimated speech duration and word timing
-        const words = text.split(/\s+/).filter(word => word.length > 0);
-        const totalWords = words.length;
-        
-        // Estimate speech duration based on text length and speech rate
-        const estimatedDuration = (text.length / 5) * 1000; // Rough estimate: 5 chars per second
-        const wordInterval = Math.max(400, estimatedDuration / totalWords); // Minimum 400ms per word
-        
-        console.log(`🔊 Speech analysis: ${totalWords} words, estimated duration: ${estimatedDuration}ms, interval: ${wordInterval}ms`);
-        
-        // Manual word highlighting with adaptive timing
-        let testWordIndex = 0;
-        const testInterval = setInterval(() => {
-          if (testWordIndex < totalWords) {
-            setCurrentWordIndex(testWordIndex);
-            console.log(`🔊 Manual: Highlighting word ${testWordIndex + 1}/${totalWords}: "${words[testWordIndex]}"`);
-            testWordIndex++;
-          } else {
-            clearInterval(testInterval);
-          }
-        }, wordInterval);
-        
-        // Store interval reference for cleanup
-        utterance.testInterval = testInterval;
-      };
+  //     utterance.onstart = () => {
+  //       // Calculate estimated speech duration and word timing
+  //       const words = text.split(/\s+/).filter(word => word.length > 0);
+  //       const totalWords = words.length;
+      
+  //       // Estimate speech duration based on text length and speech rate
+  //       const estimatedDuration = (text.length / 5) * 1000; // Rough estimate: 5 chars per second
+  //       const wordInterval = Math.max(400, estimatedDuration / totalWords); // Minimum 400ms per word
+      
+  //       // Manual word highlighting with adaptive timing
+  //       let testWordIndex = 0;
+  //       const testInterval = setInterval(() => {
+  //         if (testWordIndex < totalWords) {
+  //           setCurrentWordIndex(testWordIndex);
+  //           testWordIndex++;
+  //         } else {
+  //           clearInterval(testInterval);
+  //         }
+  //       }, wordInterval);
+      
+  //       // Store interval reference for cleanup
+  //       utterance.testInterval = testInterval;
+  //     };
 
-      utterance.onend = () => {
-        console.log(`🔊 Finished speaking (${sender})`);
-        isSpeaking.current = false;
-        
-        // Clear test interval if it exists
-        if (utterance.testInterval) {
-          clearInterval(utterance.testInterval);
-          utterance.testInterval = null;
-        }
-        
-        // Clear highlighting state
-        setCurrentlySpeakingId(null);
-        setCurrentWordIndex(0);
-        setSpeakingMessageText('');
-        
-        // Process next message in queue after a short delay
-        setTimeout(() => {
-          console.log(`🔊 Processing next message in queue...`);
-          processVoiceQueue();
-        }, 300); // Reduced delay for better flow
-      };
+  //     utterance.onend = () => {
+  //       isSpeaking.current = false;
+      
+  //       // Clear test interval if it exists
+  //       if (utterance.testInterval) {
+  //         clearInterval(utterance.testInterval);
+  //         utterance.testInterval = null;
+  //       }
+      
+  //       // Clear highlighting state
+  //       setCurrentlySpeakingId(null);
+  //       setCurrentWordIndex(0);
+  //       setSpeakingMessageText('');
+      
+  //       // Process next message in queue after a short delay
+  //       setTimeout(() => {
+  //         processVoiceQueue();
+  //       }, 300); // Reduced delay for better flow
+  //     };
 
-      utterance.onerror = (event) => {
-        console.error('🔊 Speech synthesis error:', event.error);
-        isSpeaking.current = false;
-        
-        // Clear highlighting state on error
-        setCurrentlySpeakingId(null);
-        setCurrentWordIndex(0);
-        setSpeakingMessageText('');
-        
-        // Process next message in queue after error
-        setTimeout(() => {
-          console.log(`🔊 Processing next message after error...`);
-          processVoiceQueue();
-        }, 300);
-      };
+  //     utterance.onerror = (event) => {
+  //       console.error('🔊 Speech synthesis error:', event.error);
+  //       isSpeaking.current = false;
+      
+  //       // Clear highlighting state on error
+  //       setCurrentlySpeakingId(null);
+  //       setCurrentWordIndex(0);
+  //       setSpeakingMessageText('');
+      
+  //       // Process next message in queue after error
+  //       setTimeout(() => {
+  //         processVoiceQueue();
+  //       }, 300);
+  //     };
 
-      window.speechSynthesis.speak(utterance);
-    } else {
-      console.warn('🔊 Speech synthesis not supported');
-      isSpeaking.current = false;
-    }
-  };
+  //     window.speechSynthesis.speak(utterance);
+  //   } else {
+  //     console.warn('🔊 Speech synthesis not supported');
+  //     isSpeaking.current = false;
+  //   }
+  // };
 
-  // Text-to-speech function with queue - no interruption
-  const speakText = (text, sender) => {
-    if (!voiceEnabled) return;
+  // Text-to-speech function with queue - no interruption - COMMENTED OUT
+  // const speakText = (text, sender) => {
+  //   if (!voiceEnabled) return;
 
-    // Create unique message identifier
-    const messageId = `${sender}-${text}`;
+  //   // Create unique message identifier
+  //   const messageId = `${sender}-${text}`;
 
-    // Don't speak if already spoken
-    if (spokenMessages.current.has(messageId)) {
-      console.log(`🔊 Skipping duplicate message: ${messageId}`);
-      return;
-    }
+  //   // Don't speak if already spoken
+  //   if (spokenMessages.current.has(messageId)) {
+  //     return;
+  //   }
 
-    // Mark as spoken
-    spokenMessages.current.add(messageId);
+  //   // Mark as spoken
+  //   spokenMessages.current.add(messageId);
 
-    // Add to voice queue
-    voiceQueue.current.push({ text, sender });
-    console.log(`🔊 Added to voice queue (${sender}):`, text);
+  //   // Add to voice queue
+  //   voiceQueue.current.push({ text, sender });
 
-    // Process queue if not currently speaking
-    if (!isSpeaking.current) {
-      processVoiceQueue();
-    }
-  };
+  //   // Process queue if not currently speaking
+  //   if (!isSpeaking.current) {
+  //     processVoiceQueue();
+  //   }
+  // };
 
-  // Start listening for speech
-  const startListening = () => {
-    if (speechRecognition && !isListening) {
-      speechRecognition.start();
-    }
-  };
+  // Start listening for speech - COMMENTED OUT
+  // const startListening = () => {
+  //   if (speechRecognition && !isListening) {
+  //     speechRecognition.start();
+  //   }
+  // };
 
-  // Stop listening for speech
-  const stopListening = () => {
-    if (speechRecognition && isListening) {
-      speechRecognition.stop();
-    }
-  };
+  // Stop listening for speech - COMMENTED OUT
+  // const stopListening = () => {
+  //   if (speechRecognition && isListening) {
+  //     speechRecognition.stop();
+  //   }
+  // };
 
-  // Toggle voice on/off
-  const toggleVoice = () => {
-    setVoiceEnabled(!voiceEnabled);
-    if (voiceEnabled) {
-      // Clear queues and reset state when disabling voice
-      voiceQueue.current = [];
-      displayQueue.current = [];
-      isSpeaking.current = false;
-      spokenMessages.current.clear();
-      window.speechSynthesis?.cancel();
-    } else {
-      // Test both voices when enabling
-      console.log('🔊 Testing both voice systems...');
-      if ('speechSynthesis' in window && window.speechSynthesis) {
-        const voices = window.speechSynthesis.getVoices();
-        console.log('🔊 Available voices:', voices.map(v => v.name));
+  // Toggle voice on/off - COMMENTED OUT
+  // const toggleVoice = () => {
+  //   setVoiceEnabled(!voiceEnabled);
+  //   if (voiceEnabled) {
+  //     // Clear queues and reset state when disabling voice
+  //     voiceQueue.current = [];
+  //     displayQueue.current = [];
+  //     isSpeaking.current = false;
+  //     spokenMessages.current.clear();
+  //     window.speechSynthesis?.cancel();
+  //   }
+  // };
 
-        // Test male voice for both IVR SYSTEM and EH BOT
-        const maleVoice = voices.find(voice =>
-          voice.name.includes('Male') ||
-          voice.name.includes('Alex') ||
-          voice.name.includes('David') ||
-          voice.name.includes('Google UK English Male') ||
-          voice.name.includes('Microsoft David')
-        );
-
-        // Test male voice for both systems
-        if (maleVoice) {
-          const test1 = new SpeechSynthesisUtterance('IVR SYSTEM male voice test');
-          test1.voice = maleVoice;
-          test1.onend = () => {
-            console.log('🔊 IVR SYSTEM voice test completed');
-            // Test EH BOT voice after IVR
-            const test2 = new SpeechSynthesisUtterance('EH BOT male voice test');
-            test2.voice = maleVoice;
-            test2.onend = () => console.log('🔊 EH BOT voice test completed');
-            window.speechSynthesis.speak(test2);
-          };
-          window.speechSynthesis.speak(test1);
-        } else {
-          console.log('🔊 No suitable male voice found');
-        }
-      }
-    }
-  };
-
-  // Cleanup on unmount
+  // Cleanup on unmount - COMMENTED OUT speechRecognition dependency
   useEffect(() => {
     return () => {
       activeService.disconnect();
-      if (speechRecognition) {
-        speechRecognition.stop();
-      }
-      // Clear queues and reset voice state
-      voiceQueue.current = [];
-      displayQueue.current = [];
-      isSpeaking.current = false;
-      spokenMessages.current.clear();
-      window.speechSynthesis?.cancel();
+      // if (speechRecognition) {
+      //   speechRecognition.stop();
+      // }
+      // Clear queues and reset voice state - COMMENTED OUT
+      // voiceQueue.current = [];
+      // displayQueue.current = [];
+      // isSpeaking.current = false;
+      // spokenMessages.current.clear();
+      // window.speechSynthesis?.cancel();
       setIsInitialized(false);
       setHandlersRegistered(false);
       
-      // Clear highlighting state
-      setCurrentlySpeakingId(null);
-      setCurrentWordIndex(0);
-      setSpeakingMessageText('');
+      // Clear highlighting state - COMMENTED OUT
+      // setCurrentlySpeakingId(null);
+      // setCurrentWordIndex(0);
+      // setSpeakingMessageText('');
       setProcessedMessageIds(new Set());
       processedMessageIdsRef.current.clear();
     };
-  }, [speechRecognition]);
+  }, []); // Removed speechRecognition dependency
 
   // Prevent body scrolling when chat is active
   useEffect(() => {
@@ -910,10 +868,16 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
         <div className={styles.chatHeader}>
           <div className={styles.chatHeaderContent}>
             <Title level={4} className={styles.chatTitle}>
-              Call with IVR
-              <Tag color="orange" style={{ marginLeft: '10px', fontSize: '10px' }}>
-                MOCK API MODE
-              </Tag>
+              {messages.length > 0 && messages.every(msg => msg.isHistory) ? 'Chat History' : 'Call with IVR'}
+              {messages.length > 0 && messages.every(msg => msg.isHistory) ? (
+                <Tag color="blue" style={{ marginLeft: '10px', fontSize: '10px' }}>
+                  HISTORY MODE
+                </Tag>
+              ) : (
+                <Tag color="orange" style={{ marginLeft: '10px', fontSize: '10px' }}>
+                  MOCK API MODE
+                </Tag>
+              )}
             </Title>
             <Space>
               {/* End call functionality removed */}
@@ -969,7 +933,7 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
         ) : (
           <div>
             {messages.map((msg) => {
-              console.log('🎨 Rendering message:', messages);
+          
               const isUserMessage = msg.sender.name === 'you' || msg.sender.name === 'EH BOT';
               const messageStyle = getMessageStyle(msg.sender, msg.isError);
 
@@ -978,7 +942,7 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
                 msg.sender.name === 'IVR' ? 'IVR SYSTEM' : msg.sender.name;
 
               return (
-                <div key={msg.id} className={`${styles.messageContainer} ${!isUserMessage ? styles.botMessage : ''}`}>
+                <div key={msg.id} className={`${styles.messageContainer} ${!isUserMessage ? styles.botMessage : ''} ${msg.isHistory ? styles.historyMessage : ''}`}>
                   <div className={styles.messageLayout}>
 
                     <div className={`${styles.messageContent} d-flex`}>
@@ -1002,8 +966,12 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
                         }}
                       />
                       <div
-                        className={`${styles.messageBubble} ${msg.isError ? styles.messageBubbleError : ''}`}
-                        style={messageStyle}
+                        className={`${styles.messageBubble} ${msg.isError ? styles.messageBubbleError : ''} ${msg.isHistory ? styles.historyMessageBubble : ''}`}
+                        style={{
+                          ...messageStyle,
+                          opacity: msg.isHistory ? 0.8 : 1,
+                          border: msg.isHistory ? '1px dashed #d9d9d9' : messageStyle.border
+                        }}
                       >
 
                         <div style={{ marginBottom: '6px' }}>
@@ -1029,26 +997,7 @@ const ChatComponent = ({ selectedPatient, onChatComplete, onClose }) => {
                           wordWrap: 'break-word',
                           overflowWrap: 'break-word'
                         }}>
-                          {currentlySpeakingId === msg.id ? (
-                            // Word-by-word highlighting for currently speaking message
-                            msg.text.split(/\s+/).filter(word => word.length > 0).map((word, index) => (
-                              <span
-                                key={index}
-                                style={{
-                                  display: 'inline-block',
-                                  whiteSpace: 'nowrap',
-                                  wordBreak: 'keep-all',
-                                  fontWeight: index === currentWordIndex ? 'bold' : 'normal',
-                                  marginRight: '4px'
-                                }}
-                              >
-                                {word}
-                              </span>
-                            ))
-                          ) : (
-                            // Normal text display for non-speaking messages
-                            msg.text
-                          )}
+                          {msg.text}
                         </div>
                       </div>
                       <Text type="secondary" className={styles.messageTimestamp}>

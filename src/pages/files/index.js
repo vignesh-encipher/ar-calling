@@ -11,20 +11,12 @@ const FilesPage = () => {
   const [uploading, setUploading] = useState(false);
   const [fileList, setFileList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [apiStatus, setApiStatus] = useState('unknown');
 
     // Fetch files from API
   useEffect(() => {
     const fetchFiles = async () => {
       setLoading(true);
       try {
-        console.log('=== FRONTEND API DEBUG START ===');
-        console.log('Calling API: /api/external/allBatches');
-        console.log('Method: GET');
-        console.log('Headers:', {
-          'Accept': 'application/json',
-        });
-        
         const response = await fetch('/api/external/allBatches', {
           method: 'GET',
           headers: {
@@ -32,56 +24,29 @@ const FilesPage = () => {
           },
         });
         
-        console.log('=== RESPONSE RECEIVED ===');
-        console.log('Response object:', response);
-        console.log('Status:', response.status);
-        console.log('Status Text:', response.statusText);
-        console.log('OK:', response.ok);
-        console.log('URL:', response.url);
-        console.log('Headers:', Object.fromEntries(response.headers.entries()));
-        
         if (!response.ok) {
-          console.error('=== API ERROR ===');
-          console.error('API response not ok:', response.status, response.statusText);
-          console.error('Response URL:', response.url);
-          
           // Get error response text
           const errorText = await response.text();
-          console.error('Error response text:', errorText);
           throw new Error(`API request failed: ${response.status} - ${errorText}`);
         }
 
         // Check if response is JSON
         const contentType = response.headers.get('content-type');
-        console.log('Content-Type:', contentType);
         
         if (!contentType || !contentType.includes('application/json')) {
-          console.error('=== NON-JSON RESPONSE ===');
-          console.error('Response is not JSON:', contentType);
           const responseText = await response.text();
-          console.error('Response text:', responseText);
           throw new Error('API returned non-JSON response');
         }
 
         let result;
         try {
-          console.log('=== PARSING JSON ===');
           result = await response.json();
-          console.log('=== PARSED RESULT ===');
-          console.log('Result:', result);
-          console.log('Result type:', typeof result);
-          console.log('Result keys:', Object.keys(result));
         } catch (parseError) {
-          console.error('=== JSON PARSING ERROR ===');
-          console.error('Parse error:', parseError);
-          const responseText = await response.text();
-          console.error('Response text:', responseText);
           message.error('Failed to parse API response');
           return;
         }
         
         if (result.status === 'SUCCESS') {
-          setApiStatus('connected');
           // Transform the API response to match our table format
           const transformedData = result.response.map((item, index) => ({
             key: item.id || index.toString(),
@@ -99,55 +64,33 @@ const FilesPage = () => {
           }));
           setFileData(transformedData);
         } else if (result.error === 'Ngrok authentication required') {
-          console.log('=== NGROK AUTHENTICATION REQUIRED ===');
-          setApiStatus('ngrok-warning');
           message.warning('Ngrok tunnel requires authentication. Using local data.');
           // Use local data as fallback
-          console.log('Fetching local data as fallback...');
           const localResponse = await fetch('/api/files/list');
           const localResult = await localResponse.json();
           if (localResult.success) {
             setFileData(localResult.data);
-            console.log('Local data loaded successfully');
           }
         } else {
-          console.log('=== API SUCCESS ===');
-          setApiStatus('error');
           message.error(result.message || 'Failed to load files');
         }
-        
-        console.log('=== FRONTEND API DEBUG END ===');
       } catch (error) {
-        console.error('=== FRONTEND ERROR ===');
-        console.error('Error fetching files:', error);
-        console.error('Error type:', error.constructor.name);
-        console.error('Error message:', error.message);
-        
         // Fallback to local API if external API fails
         try {
-          console.log('=== TRYING LOCAL API FALLBACK ===');
           const localResponse = await fetch('/api/files/list');
           const localResult = await localResponse.json();
           
           if (localResult.success) {
-            setApiStatus('fallback');
             setFileData(localResult.data);
             message.warning('Using local data (external API unavailable)');
-            console.log('Local fallback successful');
           } else {
-            setApiStatus('error');
             message.error('Failed to load files from both external and local APIs');
-            console.log('Local fallback failed');
           }
         } catch (localError) {
-          console.error('=== LOCAL API ERROR ===');
-          console.error('Local API also failed:', localError);
-          setApiStatus('error');
           message.error('Failed to load files - external API may be down');
         }
       } finally {
         setLoading(false);
-        console.log('=== FRONTEND API DEBUG COMPLETE ===');
       }
     };
 
@@ -190,7 +133,6 @@ const FilesPage = () => {
   };
 
   const handleRowClick = (record) => {
-    console.log('Row clicked:', record);
     // Navigate to patient list with batch ID
     window.location.href = `/home?batchId=${record.key}`;
   };
@@ -206,30 +148,23 @@ const FilesPage = () => {
     try {
       const formData = new FormData();
       formData.append('excel', fileList[0]);
-
-      console.log('Uploading file:', fileList[0].name, 'Size:', fileList[0].size);
       
       const response = await fetch('/api/external/upload', {
         method: 'POST',
         body: formData,
       });
 
-      console.log('Response status:', response.status, response.statusText);
-
       let result;
       try {
         const responseText = await response.text();
-        console.log('API Response:', responseText);
         
         // Try to parse as JSON, but handle non-JSON responses
         try {
           result = JSON.parse(responseText);
         } catch (parseError) {
-          console.log('Response is not JSON, treating as success if status is 200');
           result = { success: response.ok };
         }
       } catch (error) {
-        console.error('Response parsing error:', error);
         result = { success: response.ok };
       }
 
@@ -237,7 +172,6 @@ const FilesPage = () => {
         // Check for invalid file response
         if (result.status === 'SUCCESS' && result.message === 'invalid file') {
           message.error('Invalid file format. Please upload a valid Excel file.');
-          console.error('Invalid file error:', result);
           return;
         }
         
@@ -257,7 +191,6 @@ const FilesPage = () => {
         message.success('File uploaded successfully!');
         
         // Refresh the file list to get latest data from API
-        console.log('=== REFRESHING FILE LIST AFTER UPLOAD ===');
         try {
           const refreshResponse = await fetch('/api/external/allBatches', {
             method: 'GET',
@@ -284,23 +217,16 @@ const FilesPage = () => {
                 azureBlobPath: item.azureBlobPath
               }));
               setFileData(refreshedData);
-              console.log('File list refreshed successfully');
-            } else {
-              console.error('Failed to refresh file list:', refreshResult);
             }
-          } else {
-            console.error('Failed to refresh file list:', refreshResponse.status);
           }
         } catch (refreshError) {
-          console.error('Error refreshing file list:', refreshError);
+          // Silent error handling for refresh
         }
       } else {
         const errorMessage = result.message || result.error || `Upload failed (${response.status})`;
         message.error(errorMessage);
-        console.error('Upload failed:', response.status, result);
       }
     } catch (error) {
-      console.error('Upload error:', error);
       message.error('Upload failed. Please try again.');
     } finally {
       setUploading(false);
@@ -477,7 +403,11 @@ const FilesPage = () => {
         className={styles.uploadModal}
       >
         <div className={styles.uploadContent}>
-          <Upload.Dragger {...uploadProps} className={styles.uploadDragger}>
+          <Upload.Dragger 
+            {...uploadProps} 
+            className={styles.uploadDragger}
+            style={{ border: 'none', borderStyle: 'none', borderWidth: 0, borderColor: 'transparent' }}
+          >
             <p className="ant-upload-drag-icon">
               <UploadOutlined />
             </p>

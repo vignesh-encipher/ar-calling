@@ -5,7 +5,6 @@ import PatientList from './patientList';
 import ChatComponent from './patientChat';
 
 const Home = ({workFlowData, WorlFlow}) => {
-    console.log(WorlFlow);
     const [selectedPatient, setSelectedPatient] = useState(null);
     const [chatCompletionStatus, setChatCompletionStatus] = useState({});
 

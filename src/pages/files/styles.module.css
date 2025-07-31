@@ -49,14 +49,14 @@
 }
 
 .uploadButton {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
   border: none;
   border-radius: 12px;
   height: 48px;
   font-weight: 600;
   font-size: 16px;
   padding: 0 24px;
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 8px 25px rgba(108, 117, 125, 0.4);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -64,7 +64,7 @@
 
 .uploadButton:hover {
   transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 12px 35px rgba(102, 126, 234, 0.5);
+  box-shadow: 0 12px 35px rgba(108, 117, 125, 0.5);
 }
 
 .uploadButton:active {
@@ -101,7 +101,7 @@
 }
 
 .dataTable .ant-table-tbody > tr:hover > td {
-  background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%) !important;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
   transform: scale(1.01);
 }
 
@@ -123,7 +123,7 @@
 }
 
 .fileIcon {
-  color: #667eea;
+  color: #6c757d;
   font-size: 16px;
 }
 
@@ -196,7 +196,7 @@
 }
 
 .uploadModal .ant-modal-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
   border-bottom: none;
   padding: 24px 24px 20px;
 }
@@ -228,31 +228,109 @@
 }
 
 .uploadDragger {
-  border: 3px dashed #d9d9d9;
+  border: none !important;
   border-radius: 16px;
   background: linear-gradient(135deg, #fafafa 0%, #f8f9fa 100%);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 40px 20px;
 }
 
+.uploadDragger .ant-upload-drag {
+  border: none !important;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fafafa 0%, #f8f9fa 100%);
+}
+
+.uploadDragger .ant-upload-drag-container {
+  border: none !important;
+}
+
+/* Override all possible Ant Design upload borders */
+.uploadDragger .ant-upload-drag {
+  border: none !important;
+  border-style: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+}
+
+.uploadDragger .ant-upload-drag .ant-upload-drag-container {
+  border: none !important;
+  border-style: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+}
+
+/* Target the specific dashed border */
+.uploadDragger .ant-upload-drag-container {
+  border: none !important;
+  border-style: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+}
+
+/* Override any dashed border styles */
+.uploadDragger * {
+  border-style: none !important;
+}
+
+.uploadDragger .ant-upload-drag * {
+  border: none !important;
+  border-style: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+}
+
+/* Global override for Ant Design upload borders */
+.ant-upload-drag {
+  border: none !important;
+  border-style: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+}
+
+.ant-upload-drag-container {
+  border: none !important;
+  border-style: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+}
+
+/* Target the specific dashed border that Ant Design uses */
+.ant-upload-drag .ant-upload-drag-container {
+  border: none !important;
+  border-style: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+}
+
 
 
 .uploadDragger:hover {
-  border-color: #667eea;
-  background: linear-gradient(135deg, #f0f2ff 0%, #f8f9ff 100%);
+  border: none !important;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+  box-shadow: 0 8px 25px rgba(108, 117, 125, 0.15);
+}
+
+.uploadDragger:hover .ant-upload-drag {
+  border: none !important;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
 }
 
 .uploadDragger.ant-upload-drag-hover {
-  border-color: #667eea;
-  background: linear-gradient(135deg, #f0f2ff 0%, #f8f9ff 100%);
+  border: none !important;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+  box-shadow: 0 8px 25px rgba(108, 117, 125, 0.15);
+}
+
+.uploadDragger.ant-upload-drag-hover .ant-upload-drag {
+  border: none !important;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
 }
 
 .uploadDragger .ant-upload-drag-icon {
-  color: #667eea;
+  color: #6c757d;
   font-size: 56px;
   margin-bottom: 16px;
   transition: all 0.3s ease;
@@ -373,7 +451,7 @@
 
 /* Loading animation for upload */
 .uploadButton:disabled {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
   opacity: 0.7;
   cursor: wait;
 }
